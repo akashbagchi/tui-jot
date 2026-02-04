@@ -1,3 +1,69 @@
+pub struct ViewerState {
+    pub selected_link: usize,
+    pub visible_links: Vec<VisibleLink>,
+}
+
+#[derive(Debug, Clone)]
+pub struct VisibleLink {
+    pub target: String,
+    pub display: String,
+    pub line_index: usize,
+}
+
+impl ViewerState {
+    pub fn new() -> Self {
+        Self {
+            selected_link: 0,
+            visible_links: Vec::new(),
+        }
+    }
+
+    pub fn update_links(&mut self, note: &Note) {
+        self.visible_links.clear();
+        self.selected_link = 0;
+
+        // Bulid list of visible links with their line positions
+        let mut line_index = 0;
+        for line in note.content.lines() {
+            for link in &note.links {
+                let line_start = note.content[..note.content.len().min(link.span.start)]
+                    .lines()
+                    .count()
+                    .saturating_sub(1);
+
+                if line_start == line_index {
+                    self.visible_links.push(VisibleLink {
+                        target: link.target.clone(),
+                        display: link.display.clone().unwrap_or_else(|| link.target.clone()),
+                        line_index,
+                    });
+                }
+            }
+            line_index += 1;
+        }
+    }
+
+    pub fn next_link(&mut self) {
+        if !self.visible_links.is_empty() {
+            self.selected_link = (self.selected_link + 1) % self.visible_links.len();
+        }
+    }
+
+    pub fn prev_link(&mut self) {
+        if !self.visible_links.is_empty() {
+            self.selected_link = if self.selected_link == 0 {
+                self.visible_links.len() - 1
+            } else {
+                self.selected_link - 1
+            };
+        }
+    }
+
+    pub fn current_link(&self) -> Option<&VisibleLink> {
+        self.visible_links.get(self.selected_link)
+    }
+}
+
 use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
@@ -25,7 +91,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
         .border_style(border_style);
 
     let content = if let Some(note) = app.selected_note() {
-        render_markdown(note)
+        render_markdown(note, &app.viewer_state)
     } else {
         Text::from(vec![
             Line::from(""),
@@ -44,17 +110,17 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     frame.render_widget(paragraph, area);
 }
 
-fn render_markdown(note: &Note) -> Text<'static> {
+fn render_markdown(note: &Note, viewer_state: &ViewerState) -> Text<'static> {
     let mut lines: Vec<Line<'static>> = Vec::new();
 
-    for line in note.content.lines() {
-        lines.push(render_line(line, note));
+    for (line_idx, line) in note.content.lines().enumerate() {
+        lines.push(render_line(line, note, viewer_state, line_idx));
     }
 
     Text::from(lines)
 }
 
-fn render_line(line: &str, note: &Note) -> Line<'static> {
+fn render_line(line: &str, note: &Note, viewer_state: &ViewerState, line_idx: usize) -> Line<'static> {
     let trimmed = line.trim();
 
     // Headings
@@ -91,23 +157,16 @@ fn render_line(line: &str, note: &Note) -> Line<'static> {
         ));
     }
 
-    // Lists
-    if trimmed.starts_with("- ") || trimmed.starts_with("* ") {
-        return Line::from(Span::styled(
-            line.to_string(),
-            Style::default().fg(Color::White),
-        ));
-    }
-
-    // Parse inline elements (tags, links, bold, etc.)
-    render_inline(line, note)
+    // Parse inline elements (tags, links, bold, etc.) - includes lists
+    render_inline(line, note, viewer_state, line_idx)
 }
 
-fn render_inline(line: &str, _note: &Note) -> Line<'static> {
+fn render_inline(line: &str, _note: &Note, viewer_state: &ViewerState, line_idx: usize) -> Line<'static> {
     let mut spans: Vec<Span<'static>> = Vec::new();
     let mut current = String::new();
     let chars: Vec<char> = line.chars().collect();
     let mut i = 0;
+    let mut link_count_on_line = 0;
 
     while i < chars.len() {
         // Check for wiki-link [[...]]
@@ -119,16 +178,19 @@ fn render_inline(line: &str, _note: &Note) -> Line<'static> {
             }
 
             // Find closing ]]
-            let start = i;
             i += 2;
             let mut link_text = String::new();
 
-            while i + 1 < chars.len() && !(chars[i] == ']' && chars[i + 1] == ']') {
+            while i < chars.len() {
+                if i + 1 < chars.len() && chars[i] == ']' && chars[i + 1] == ']' {
+                    break;
+                }
                 link_text.push(chars[i]);
                 i += 1;
             }
 
-            if i + 1 < chars.len() {
+            // Check if we actually found ]]
+            if i + 1 < chars.len() && chars[i] == ']' && chars[i + 1] == ']' {
                 i += 2; // Skip ]]
 
                 // Extract display text if present
@@ -138,16 +200,35 @@ fn render_inline(line: &str, _note: &Note) -> Line<'static> {
                     link_text.clone()
                 };
 
-                spans.push(Span::styled(
-                    format!("[[{}]]", display),
+                // Check if this is the selected link
+                let is_selected = viewer_state.visible_links
+                    .get(viewer_state.selected_link)
+                    .map(|selected| {
+                        selected.line_index == line_idx &&
+                        viewer_state.visible_links[..viewer_state.selected_link]
+                            .iter()
+                            .filter(|l| l.line_index == line_idx)
+                            .count() == link_count_on_line
+                    })
+                    .unwrap_or(false);
+
+                let style = if is_selected {
                     Style::default()
                         .fg(Color::Green)
-                        .add_modifier(Modifier::UNDERLINED),
-                ));
+                        .bg(Color::DarkGray)
+                        .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+                } else {
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::UNDERLINED)
+                };
+
+                spans.push(Span::styled(
+                    format!("[[{}]]", display), style));
+                link_count_on_line += 1;
             } else {
-                // Malformed link, just add as text
-                current.push_str(&line[start..]);
-                i = chars.len();
+                current.push_str("[[");
+                current.push_str(&link_text);
             }
             continue;
         }

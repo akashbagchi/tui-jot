@@ -21,6 +21,7 @@ pub struct App {
     pub should_quit: bool,
     pub browser_state: ui::BrowserState,
     pub viewer_scroll: u16,
+    pub viewer_state: ui::ViewerState,
 }
 
 impl App {
@@ -35,6 +36,7 @@ impl App {
             should_quit: false,
             browser_state,
             viewer_scroll: 0,
+            viewer_state: ui::ViewerState::new(),
         })
     }
 
@@ -84,8 +86,9 @@ impl App {
 
     pub fn selected_note(&self) -> Option<&crate::core::Note> {
         self.browser_state
-            .selected_path()
-            .and_then(|path| self.vault.get_note(path))
+            .selected_entry(&self.vault)
+            .filter(|entry| !entry.is_dir)
+            .and_then(|entry| self.vault.get_note(&entry.path))
     }
 
     pub fn refresh_vault(&mut self) -> Result<()> {

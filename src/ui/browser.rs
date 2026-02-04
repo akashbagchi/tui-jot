@@ -54,6 +54,11 @@ impl BrowserState {
         self.list_state.select(Some(self.selected));
     }
 
+    pub fn select(&mut self, index: usize) {
+        self.selected = index;
+        self.list_state.select(Some(index));
+    }
+
     pub fn selected_entry<'a>(&self, vault: &'a Vault) -> Option<&'a TreeEntry> {
         vault.visible_entries().get(self.selected).copied()
     }
