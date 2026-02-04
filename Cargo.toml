@@ -1,0 +1,18 @@
+[package]
+name = "tui-jot"
+version = "0.1.0"
+edition = "2024"
+description = "A TUI notetaking app with wiki-style linking and graph visualization"
+license = "MIT"
+repository = "https://github.com/cursim/tui-jot"
+
+[dependencies]
+ratatui = "0.29"
+crossterm = "0.28"
+pulldown-cmark = "0.12"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+directories = "6"
+walkdir = "2"
+color-eyre = "0.6"
