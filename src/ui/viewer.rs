@@ -91,7 +91,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
         .border_style(border_style);
 
     let content = if let Some(note) = app.selected_note() {
-        render_markdown(note, &app.viewer_state)
+        render_markdown(note, &app.viewer_state, &app.vault)
     } else {
         Text::from(vec![
             Line::from(""),
@@ -110,17 +110,17 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     frame.render_widget(paragraph, area);
 }
 
-fn render_markdown(note: &Note, viewer_state: &ViewerState) -> Text<'static> {
+fn render_markdown(note: &Note, viewer_state: &ViewerState, vault: &crate::core::Vault) -> Text<'static> {
     let mut lines: Vec<Line<'static>> = Vec::new();
 
     for (line_idx, line) in note.content.lines().enumerate() {
-        lines.push(render_line(line, note, viewer_state, line_idx));
+        lines.push(render_line(line, note, viewer_state, line_idx, vault));
     }
 
     Text::from(lines)
 }
 
-fn render_line(line: &str, note: &Note, viewer_state: &ViewerState, line_idx: usize) -> Line<'static> {
+fn render_line(line: &str, note: &Note, viewer_state: &ViewerState, line_idx: usize, vault: &crate::core::Vault) -> Line<'static> {
     let trimmed = line.trim();
 
     // Headings
@@ -158,10 +158,10 @@ fn render_line(line: &str, note: &Note, viewer_state: &ViewerState, line_idx: us
     }
 
     // Parse inline elements (tags, links, bold, etc.) - includes lists
-    render_inline(line, note, viewer_state, line_idx)
+    render_inline(line, note, viewer_state, line_idx, vault)
 }
 
-fn render_inline(line: &str, _note: &Note, viewer_state: &ViewerState, line_idx: usize) -> Line<'static> {
+fn render_inline(line: &str, _note: &Note, viewer_state: &ViewerState, line_idx: usize, vault: &crate::core::Vault) -> Line<'static> {
     let mut spans: Vec<Span<'static>> = Vec::new();
     let mut current = String::new();
     let chars: Vec<char> = line.chars().collect();
@@ -193,11 +193,11 @@ fn render_inline(line: &str, _note: &Note, viewer_state: &ViewerState, line_idx:
             if i + 1 < chars.len() && chars[i] == ']' && chars[i + 1] == ']' {
                 i += 2; // Skip ]]
 
-                // Extract display text if present
-                let display = if let Some(pipe_pos) = link_text.find('|') {
-                    link_text[pipe_pos + 1..].to_string()
+                // Extract target and display text
+                let (target, display) = if let Some(pipe_pos) = link_text.find('|') {
+                    (link_text[..pipe_pos].to_string(), link_text[pipe_pos + 1..].to_string())
                 } else {
-                    link_text.clone()
+                    (link_text.clone(), link_text.clone())
                 };
 
                 // Check if this is the selected link
@@ -212,7 +212,21 @@ fn render_inline(line: &str, _note: &Note, viewer_state: &ViewerState, line_idx:
                     })
                     .unwrap_or(false);
 
-                let style = if is_selected {
+                // Check if the link is broken
+                let is_broken = !vault.link_exists(&target);
+
+                let style = if is_broken {
+                    if is_selected {
+                        Style::default()
+                            .fg(Color::Red)
+                            .bg(Color::DarkGray)
+                            .add_modifier(Modifier::BOLD | Modifier::CROSSED_OUT)
+                    } else {
+                        Style::default()
+                            .fg(Color::Red)
+                            .add_modifier(Modifier::CROSSED_OUT)
+                    }
+                } else if is_selected {
                     Style::default()
                         .fg(Color::Green)
                         .bg(Color::DarkGray)

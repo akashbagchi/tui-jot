@@ -170,4 +170,20 @@ impl Vault {
 
         backlinks
     }
+
+    pub fn link_exists(&self, target: &str) -> bool {
+        let target_name = if target.ends_with(".md") {
+            target.strip_suffix(".md").unwrap_or(target)
+        } else {
+            target
+        };
+
+        // Check all notes for a match (Case-insensitive)
+        self.notes.keys().any(|path| {
+            path.file_stem()
+                .and_then(|s| s.to_str())
+                .map(|name| name.eq_ignore_ascii_case(target_name))
+                .unwrap_or(false)
+        })
+    }
 }
