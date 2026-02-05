@@ -139,10 +139,11 @@ impl Vault {
         let mut backlinks = Vec::new();
 
         // Normalize the target path - remove .md extension for comparison
-        let target_name = note_path
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("");
+        let target_name = if note_path.extension().map(|e| e == "md").unwrap_or(false) {
+            note_path.with_extension("")
+        } else {
+            note_path.to_path_buf()
+        };
 
         // Search through all notes for links to this note
         for (source_path, note) in &self.notes {
@@ -152,14 +153,13 @@ impl Vault {
             }
 
             for link in &note.links {
-                let link_target = if link.target.ends_with(".md") {
-                    link.target.strip_suffix(".md").unwrap_or(&link.target)
+                let link_path = if link.target.ends_with(".md") {
+                    PathBuf::from(link.target.strip_suffix(".md").unwrap())
                 } else {
-                    &link.target
+                    PathBuf::from(&link.target)
                 };
 
-                // Case-insensitive comparison
-                if link_target.eq_ignore_ascii_case(target_name) {
+                if Self::paths_match(&target_name, &link_path) {
                     backlinks.push(note);
                     break;
                 }
@@ -185,5 +185,17 @@ impl Vault {
                 .map(|name| name.eq_ignore_ascii_case(target_name))
                 .unwrap_or(false)
         })
+    }
+
+    fn paths_match(target: &Path, link: &Path) -> bool {
+        if link.components().count() == 1 {
+            if let Some(target_name) = target.file_name() {
+                return target_name.to_string_lossy().eq_ignore_ascii_case(
+                    &link.to_string_lossy()
+                );
+            }
+        }
+
+        target.to_string_lossy().eq_ignore_ascii_case(&link.to_string_lossy())
     }
 }

@@ -22,6 +22,7 @@ pub struct App {
     pub browser_state: ui::BrowserState,
     pub viewer_scroll: u16,
     pub viewer_state: ui::ViewerState,
+    pub backlinks_state: ui::BacklinksState,
 }
 
 impl App {
@@ -37,6 +38,7 @@ impl App {
             browser_state,
             viewer_scroll: 0,
             viewer_state: ui::ViewerState::new(),
+            backlinks_state: ui::BacklinksState::new(),
         })
     }
 
@@ -94,6 +96,7 @@ impl App {
     pub fn refresh_vault(&mut self) -> Result<()> {
         self.vault = Vault::open(&self.config.vault.path)?;
         self.browser_state = ui::BrowserState::new(&self.vault);
+        self.backlinks_state.reset();
         Ok(())
     }
 

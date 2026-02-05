@@ -54,6 +54,15 @@ impl InputHandler {
                 app.focus = app.focus.next();
                 return Ok(());
             }
+            KeyCode::Char('b') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                // Toggle backlinks panel
+                app.focus = if app.focus == Focus::Backlinks {
+                    Focus::Browser
+                } else {
+                    Focus::Backlinks
+                };
+                return Ok(());
+            }
             _ => {}
         }
 
@@ -61,6 +70,7 @@ impl InputHandler {
         match app.focus {
             Focus::Browser => Self::handle_browser(app, key),
             Focus::Viewer => Self::handle_viewer(app, key),
+            Focus::Backlinks => Self::handle_backlinks(app, key),
         }
 
         Ok(())
@@ -141,4 +151,43 @@ impl InputHandler {
             _ => {}
         }
     }
+
+    fn handle_backlinks(app: &mut App, key: KeyEvent) {
+        match key.code {
+        KeyCode::Char('j') | KeyCode::Down => {
+            if let Some(note) = app.selected_note() {
+                let backlinks = app.vault.get_backlinks(&note.path);
+                app.backlinks_state.move_down(&backlinks);
+            }
+        }
+        KeyCode::Char('k') | KeyCode::Up => {
+            app.backlinks_state.move_up();
+        }
+        KeyCode::Enter => {
+            // Navigate to selected backlink
+            if let Some(note) = app.selected_note() {
+                let backlinks = app.vault.get_backlinks(&note.path);
+                if let Some(target_path) = app.backlinks_state.selected_path(&backlinks) {
+                    // Find this note in the browser tree
+                    if let Some(index) = app.vault.visible_entries()
+                        .iter()
+                        .position(|e| &e.path == target_path)
+                    {
+                        app.browser_state.select(index);
+                        if let Some(note) = app.vault.get_note(target_path) {
+                            app.viewer_state.update_links(note);
+                        }
+                        app.viewer_scroll = 0;
+                        app.backlinks_state.reset();
+                        app.focus = Focus::Viewer;
+                    }
+                }
+            }
+        }
+        KeyCode::Char('h') | KeyCode::Left | KeyCode::Esc => {
+            app.focus = Focus::Browser;
+        }
+        _ => {}
+    }
+}
 }

@@ -8,12 +8,13 @@ use ratatui::{
 
 use crate::app::App;
 
-use super::{browser, viewer};
+use super::{backlinks, browser, viewer};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Focus {
     Browser,
     Viewer,
+    Backlinks,
 }
 
 impl Focus {
@@ -21,6 +22,7 @@ impl Focus {
         match self {
             Focus::Browser => Focus::Viewer,
             Focus::Viewer => Focus::Browser,
+            Focus::Backlinks => Focus::Browser,
         }
     }
 }
@@ -79,58 +81,14 @@ fn render_main(frame: &mut Frame, area: Rect, app: &App) {
 }
 
 fn render_backlinks(frame: &mut Frame, area: Rect, app: &App) {
-    use ratatui::{
-        style::{Color, Style},
-        text::{Line, Span},
-        widgets::{Block, Borders, List, ListItem},
-    };
-
-    let border_style = Style::default().fg(Color::DarkGray);
-
-    let block = Block::default()
-        .title(" Backlinks ")
-        .borders(Borders::ALL)
-        .border_style(border_style);
-
-    let items: Vec<ListItem> = if let Some(note) = app.selected_note() {
-        let backlinks = app.vault.get_backlinks(&note.path);
-
-        if backlinks.is_empty() {
-            vec![ListItem::new(Line::from(Span::styled(
-                        "   No backlinks",
-                        Style::default().fg(Color::DarkGray),
-                        )))]
-        } else {
-            backlinks
-                .iter()
-                .map(|backlink| {
-                    let name = backlink.path
-                        .file_stem()
-                        .and_then(|s| s.to_str())
-                        .unwrap_or("Unknown");
-
-                    ListItem::new(Line::from(vec![
-                            Span::raw("  <- "),
-                            Span::styled(name, Style::default().fg(Color::Yellow)),
-                    ]))
-                })
-                .collect()
-        }
-    } else {
-        vec![ListItem::new(Line::from(Span::styled(
-                    "   No note selected",
-                    Style::default().fg(Color::DarkGray),
-                    )))]
-    };
-
-    let list = List::new(items).block(block);
-    frame.render_widget(list, area);
+    backlinks::render(frame, area, app);
 }
 
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
     let help_text = match app.focus {
         Focus::Browser => "j/k: navigate  Enter: open  e: edit  Tab: switch pane  q: quit",
         Focus::Viewer => "j/k: scroll  h/Esc: back  e: edit  Tab: switch pane  q: quit",
+        Focus::Backlinks => "j/k: navigate  Enter: open  Tab: switch pane  q: quit"
     };
 
     let note_info = app.selected_note()
