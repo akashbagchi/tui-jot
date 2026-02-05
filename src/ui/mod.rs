@@ -6,5 +6,5 @@ mod viewer_state;
 
 pub use backlinks::BacklinksState;
 pub use browser::BrowserState;
-pub use layout::{render, Focus};
+pub use layout::{Focus, render};
 pub use viewer_state::{EditorMode, ViewerState, VisibleLink};

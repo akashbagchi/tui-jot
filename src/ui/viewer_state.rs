@@ -145,7 +145,7 @@ impl ViewerState {
         if self.cursor.col > 0 {
             let char_idx = self.line_col_to_char_idx(self.cursor.line, self.cursor.col);
             if char_idx > 0 {
-                self.content.remove(char_idx -1..char_idx);
+                self.content.remove(char_idx - 1..char_idx);
                 self.cursor.col -= 1;
                 self.dirty = true;
                 self.check_autocomplete_trigger();
@@ -154,7 +154,11 @@ impl ViewerState {
             // Join with previous line
             let char_idx = self.line_col_to_char_idx(self.cursor.line, self.cursor.col);
             if char_idx > 0 {
-                let prev_line_len = self.content.line(self.cursor.line - 1).len_chars().saturating_sub(1);
+                let prev_line_len = self
+                    .content
+                    .line(self.cursor.line - 1)
+                    .len_chars()
+                    .saturating_sub(1);
                 self.content.remove(char_idx - 1..char_idx);
                 self.cursor.line -= 1;
                 self.cursor.col = prev_line_len;
@@ -216,7 +220,10 @@ impl ViewerState {
 
     fn current_line_len(&self) -> usize {
         if self.cursor.line < self.content.len_lines() {
-            self.content.line(self.cursor.line).len_chars().saturating_sub(1)
+            self.content
+                .line(self.cursor.line)
+                .len_chars()
+                .saturating_sub(1)
         } else {
             0
         }
@@ -261,7 +268,9 @@ impl ViewerState {
             let cursor_idx = self.line_col_to_char_idx(self.cursor.line, self.cursor.col);
 
             let new_query = if cursor_idx > trigger_idx + 2 {
-                self.content.slice((trigger_idx + 2)..cursor_idx).to_string()
+                self.content
+                    .slice((trigger_idx + 2)..cursor_idx)
+                    .to_string()
             } else {
                 String::new()
             };
@@ -332,12 +341,14 @@ impl ViewerState {
         if let Some(ac) = self.autocomplete.take() {
             if let Some((path, _)) = ac.matches.get(ac.selected) {
                 // Remove the [[ and any query text
-                let trigger_idx = self.line_col_to_char_idx(ac.trigger_pos.line, ac.trigger_pos.col);
+                let trigger_idx =
+                    self.line_col_to_char_idx(ac.trigger_pos.line, ac.trigger_pos.col);
                 let cursor_idx = self.line_col_to_char_idx(self.cursor.line, self.cursor.col);
                 self.content.remove(trigger_idx..cursor_idx);
 
                 // Insert the completed link
-                let link_name = path.file_stem()
+                let link_name = path
+                    .file_stem()
                     .and_then(|s| s.to_str())
                     .unwrap_or("Unknown");
                 let completion = format!("[[{}]]", link_name);

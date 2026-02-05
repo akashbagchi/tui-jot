@@ -44,7 +44,11 @@ impl Vault {
             if path.is_file() && path.extension().map(|e| e == "md").unwrap_or(false) {
                 let relative = path.strip_prefix(&root).unwrap_or(path).to_path_buf();
                 let content = std::fs::read_to_string(path).unwrap_or_default();
-                let modified = entry.metadata().map(|m| m.modified().ok()).ok().flatten()
+                let modified = entry
+                    .metadata()
+                    .map(|m| m.modified().ok())
+                    .ok()
+                    .flatten()
                     .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
 
                 let note = Note::from_file(relative.clone(), content, modified);
@@ -203,12 +207,14 @@ impl Vault {
     fn paths_match(target: &Path, link: &Path) -> bool {
         if link.components().count() == 1 {
             if let Some(target_name) = target.file_name() {
-                return target_name.to_string_lossy().eq_ignore_ascii_case(
-                    &link.to_string_lossy()
-                );
+                return target_name
+                    .to_string_lossy()
+                    .eq_ignore_ascii_case(&link.to_string_lossy());
             }
         }
 
-        target.to_string_lossy().eq_ignore_ascii_case(&link.to_string_lossy())
+        target
+            .to_string_lossy()
+            .eq_ignore_ascii_case(&link.to_string_lossy())
     }
 }

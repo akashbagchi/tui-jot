@@ -1,12 +1,12 @@
 use ratatui::{
+    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph},
-    Frame,
 };
 
-use crate::app::App;
+use crate::app::{App, CreateNoteState, DeleteConfirmState};
 
 use super::{backlinks, browser, viewer};
 
@@ -44,11 +44,24 @@ pub fn render(frame: &mut Frame, app: &App) {
     if app.show_help {
         render_help(frame);
     }
+
+    if let Some(state) = &app.create_note_state {
+        render_create_dialog(frame, state);
+    }
+
+    if let Some(state) = &app.delete_confirm_state {
+        render_delete_dialog(frame, state);
+    }
 }
 
 fn render_title_bar(frame: &mut Frame, area: Rect, app: &App) {
     let title = Line::from(vec![
-        Span::styled(" tui-jot ", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            " tui-jot ",
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::raw("│ "),
         Span::styled(
             app.vault.root.display().to_string(),
@@ -56,8 +69,7 @@ fn render_title_bar(frame: &mut Frame, area: Rect, app: &App) {
         ),
     ]);
 
-    let title_bar = Paragraph::new(title)
-        .style(Style::default().bg(Color::Black));
+    let title_bar = Paragraph::new(title).style(Style::default().bg(Color::Black));
 
     frame.render_widget(title_bar, area);
 }
@@ -73,10 +85,7 @@ fn render_main(frame: &mut Frame, area: Rect, app: &App) {
 
     let left_chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage(70),
-            Constraint::Min(5),
-        ])
+        .constraints([Constraint::Percentage(70), Constraint::Min(5)])
         .split(main_chunks[0]);
 
     browser::render(frame, left_chunks[0], app);
@@ -90,17 +99,21 @@ fn render_backlinks(frame: &mut Frame, area: Rect, app: &App) {
 
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
     let help_text = match app.focus {
-        Focus::Browser => "j/k: navigate  Enter: open  i: edit  Tab: switch pane  q: quit",
+        Focus::Browser => "j/k: navigate  Enter: open  a: new  d: delete  Tab: switch  q: quit",
         Focus::Viewer => "j/k: scroll  h/Esc: back  i: edit  Tab: switch pane  q: quit",
-        Focus::Backlinks => "j/k: navigate  Enter: open  Tab: switch pane  q: quit"
+        Focus::Backlinks => "j/k: navigate  Enter: open  Tab: switch pane  q: quit",
     };
 
-    let note_info = app.selected_note()
-        .map(|n| format!("{} │ {} tags │ {} links",
-            n.path.display(),
-            n.tags.len(),
-            n.links.len()
-        ))
+    let note_info = app
+        .selected_note()
+        .map(|n| {
+            format!(
+                "{} │ {} tags │ {} links",
+                n.path.display(),
+                n.tags.len(),
+                n.links.len()
+            )
+        })
         .unwrap_or_default();
 
     let status = Line::from(vec![
@@ -109,37 +122,51 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
         Span::styled(note_info, Style::default().fg(Color::Cyan)),
     ]);
 
-    let status_bar = Paragraph::new(status)
-        .style(Style::default().bg(Color::Black));
+    let status_bar = Paragraph::new(status).style(Style::default().bg(Color::Black));
 
     frame.render_widget(status_bar, area);
 }
 
 fn render_help(frame: &mut Frame) {
     let keybindings = vec![
-        ("Navigation", vec![
-            ("j / k", "Move down / up"),
-            ("Enter", "Open note or follow link"),
-            ("Tab", "Switch pane"),
-            ("h / Esc", "Go back"),
-        ]),
-        ("Viewer", vec![
-            ("i", "Enter edit mode"),
-            ("Ctrl+n / p", "Next / previous link"),
-            ("Ctrl+d / u", "Page down / up"),
-        ]),
-        ("Global", vec![
-            ("Ctrl+e", "Open in external editor"),
-            ("Ctrl+b", "Toggle backlinks panel"),
-            ("Ctrl+Shift+K", "Toggle this help"),
-            ("q", "Quit"),
-        ]),
+        (
+            "Navigation",
+            vec![
+                ("j / k", "Move down / up"),
+                ("Enter", "Open note or follow link"),
+                ("Tab", "Switch pane"),
+                ("h / Esc", "Go back"),
+            ],
+        ),
+        (
+            "Browser",
+            vec![("a", "Create new note"), ("d", "Delete note")],
+        ),
+        (
+            "Viewer",
+            vec![
+                ("i", "Enter edit mode"),
+                ("Ctrl+n / p", "Next / previous link"),
+                ("Ctrl+d / u", "Page down / up"),
+            ],
+        ),
+        (
+            "Global",
+            vec![
+                ("Ctrl+e", "Open in external editor"),
+                ("Ctrl+b", "Toggle backlinks panel"),
+                ("Ctrl+Shift+K", "Toggle this help"),
+                ("q", "Quit"),
+            ],
+        ),
     ];
 
     // Calculate content size
-    let content_height = keybindings.iter()
+    let content_height = keybindings
+        .iter()
         .map(|(_, items)| items.len() + 2) // +2 for header and blank line
-        .sum::<usize>() + 1;
+        .sum::<usize>()
+        + 1;
     let content_width = 42;
 
     let area = centered_fixed_rect(content_width, content_height as u16, frame.area());
@@ -157,7 +184,9 @@ fn render_help(frame: &mut Frame) {
         }
         text.push(Line::from(Span::styled(
             *section,
-            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
         )));
         for (key, action) in items {
             text.push(Line::from(vec![
@@ -182,4 +211,83 @@ fn centered_fixed_rect(width: u16, height: u16, r: Rect) -> Rect {
     let y = r.y + (r.height.saturating_sub(popup_height)) / 2;
 
     Rect::new(x, y, popup_width, popup_height)
+}
+
+fn render_create_dialog(frame: &mut Frame, state: &CreateNoteState) {
+    let area = centered_fixed_rect(40, 5, frame.area());
+    frame.render_widget(Clear, area);
+
+    let block = Block::default()
+        .title(" New Note ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Cyan));
+
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    // Show parent directory info
+    let parent_display = state.parent_dir.display().to_string();
+    let parent_text = if parent_display.is_empty() {
+        "/"
+    } else {
+        &parent_display
+    };
+
+    let text = vec![
+        Line::from(vec![
+            Span::styled("Location: ", Style::default().fg(Color::DarkGray)),
+            Span::raw(parent_text),
+        ]),
+        Line::from(vec![
+            Span::styled("Name: ", Style::default().fg(Color::Yellow)),
+            Span::raw(&state.filename),
+            Span::styled(
+                "_",
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::SLOW_BLINK),
+            ),
+        ]),
+    ];
+
+    let paragraph = Paragraph::new(text);
+    frame.render_widget(paragraph, inner);
+}
+
+fn render_delete_dialog(frame: &mut Frame, state: &DeleteConfirmState) {
+    let area = centered_fixed_rect(45, 5, frame.area());
+    frame.render_widget(Clear, area);
+
+    let block = Block::default()
+        .title(" Delete Note ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Red));
+
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    let text = vec![
+        Line::from(vec![
+            Span::raw("Delete "),
+            Span::styled(&state.name, Style::default().fg(Color::Yellow)),
+            Span::raw("?"),
+        ]),
+        Line::from(vec![
+            Span::styled(
+                "y",
+                Style::default()
+                    .fg(Color::Green)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(" = yes    "),
+            Span::styled(
+                "n/Esc",
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(" = cancel"),
+        ]),
+    ];
+
+    let paragraph = Paragraph::new(text);
+    frame.render_widget(paragraph, inner);
 }

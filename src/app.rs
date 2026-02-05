@@ -1,18 +1,31 @@
 use std::io::{self, Stdout};
+use std::path::PathBuf;
 use std::time::Duration;
 
 use color_eyre::Result;
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use ratatui::{backend::CrosstermBackend, Terminal};
+use ratatui::{Terminal, backend::CrosstermBackend};
 
 use crate::config::Config;
 use crate::core::Vault;
 use crate::input::InputHandler;
 use crate::ui::{self, Focus};
+
+/// State for the create note dialog
+pub struct CreateNoteState {
+    pub filename: String,    // User-typed name (without .md)
+    pub parent_dir: PathBuf, // Directory to create in
+}
+
+/// State for the delete confirmation dialog
+pub struct DeleteConfirmState {
+    pub path: PathBuf, // Relative path to delete
+    pub name: String,  // Display name for dialog
+}
 
 pub struct App {
     pub config: Config,
@@ -24,6 +37,8 @@ pub struct App {
     pub viewer_state: ui::ViewerState,
     pub backlinks_state: ui::BacklinksState,
     pub show_help: bool,
+    pub create_note_state: Option<CreateNoteState>,
+    pub delete_confirm_state: Option<DeleteConfirmState>,
 }
 
 impl App {
@@ -41,6 +56,8 @@ impl App {
             viewer_state: ui::ViewerState::new(),
             backlinks_state: ui::BacklinksState::new(),
             show_help: false,
+            create_note_state: None,
+            delete_confirm_state: None,
         })
     }
 
@@ -68,7 +85,10 @@ impl App {
         Ok(())
     }
 
-    async fn event_loop(&mut self, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
+    async fn event_loop(
+        &mut self,
+        terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    ) -> Result<()> {
         loop {
             terminal.draw(|frame| ui::render(frame, self))?;
 
@@ -97,7 +117,8 @@ impl App {
 
     pub fn refresh_vault(&mut self) -> Result<()> {
         // Preserve the currently selected path before refreshing
-        let selected_path = self.browser_state
+        let selected_path = self
+            .browser_state
             .selected_entry(&self.vault)
             .map(|e| e.path.clone());
 
@@ -107,7 +128,9 @@ impl App {
 
         // Restore selection if the path still exists
         if let Some(path) = selected_path {
-            if let Some(index) = self.vault.visible_entries()
+            if let Some(index) = self
+                .vault
+                .visible_entries()
                 .iter()
                 .position(|e| e.path == path)
             {
@@ -122,7 +145,10 @@ impl App {
         Ok(())
     }
 
-    pub fn open_in_editor(&mut self, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
+    pub fn open_in_editor(
+        &mut self,
+        terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    ) -> Result<()> {
         if let Some(entry) = self.browser_state.selected_entry(&self.vault) {
             if !entry.is_dir {
                 let note_path = self.vault.root.join(&entry.path);

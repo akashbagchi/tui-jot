@@ -1,11 +1,11 @@
 use std::path::PathBuf;
 
 use ratatui::{
+    Frame,
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, ListState},
-    Frame,
 };
 
 use crate::app::App;
@@ -83,7 +83,8 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .enumerate()
             .map(|(i, backlink)| {
-                let name = backlink.path
+                let name = backlink
+                    .path
                     .file_stem()
                     .and_then(|s| s.to_str())
                     .unwrap_or("Unknown");
@@ -104,13 +105,11 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .collect()
     };
 
-    let list = List::new(items)
-        .block(block)
-        .highlight_style(
-            Style::default()
-                .bg(Color::DarkGray)
-                .add_modifier(Modifier::BOLD),
-        );
+    let list = List::new(items).block(block).highlight_style(
+        Style::default()
+            .bg(Color::DarkGray)
+            .add_modifier(Modifier::BOLD),
+    );
 
     let mut state = app.backlinks_state.list_state.clone();
     frame.render_stateful_widget(list, area, &mut state);

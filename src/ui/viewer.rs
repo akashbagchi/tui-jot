@@ -1,15 +1,15 @@
 use ratatui::{
+    Frame,
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
     widgets::{Block, Borders, Paragraph, Wrap},
-    Frame,
 };
 
+use super::viewer_state::{AutocompleteState, EditorMode, ViewerState};
 use crate::app::App;
 use crate::core::Note;
 use crate::ui::layout::Focus;
-use super::viewer_state::{AutocompleteState, EditorMode, ViewerState};
 
 pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     let is_focused = app.focus == Focus::Viewer;
@@ -22,11 +22,13 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
 
     let mode_indicator = match app.viewer_state.mode {
         EditorMode::Read => " Preview ",
-        EditorMode::Edit => if app.viewer_state.dirty {
-            " EDIT [modified] "
-        } else {
-            " EDIT "
-        },
+        EditorMode::Edit => {
+            if app.viewer_state.dirty {
+                " EDIT [modified] "
+            } else {
+                " EDIT "
+            }
+        }
     };
 
     let block = Block::default()
@@ -67,13 +69,17 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
 
     // Set cursor position in EDIT mode
     if is_focused && app.viewer_state.mode == EditorMode::Edit {
-        let cursor_line = app.viewer_state.cursor.line.saturating_sub(app.viewer_scroll as usize);
+        let cursor_line = app
+            .viewer_state
+            .cursor
+            .line
+            .saturating_sub(app.viewer_scroll as usize);
         let cursor_col = app.viewer_state.cursor.col;
-        
+
         // Account for border (1 char) and ensure cursor is within visible area
         let x = area.x + 1 + cursor_col as u16;
         let y = area.y + 1 + cursor_line as u16;
-        
+
         if y >= area.y + 1 && y < area.y + area.height - 1 {
             frame.set_cursor_position((x, y));
         }
@@ -104,7 +110,10 @@ fn render_autocomplete(
     }
 
     // Calculate popup position (near cursor)
-    let cursor_y = ac.trigger_pos.line.saturating_sub(viewer_state.scroll_offset);
+    let cursor_y = ac
+        .trigger_pos
+        .line
+        .saturating_sub(viewer_state.scroll_offset);
     let cursor_x = ac.trigger_pos.col + 2; // After [[
 
     let popup_height = (ac.matches.len() + 2).min(12) as u16;
@@ -112,7 +121,8 @@ fn render_autocomplete(
 
     // Position popup near cursor, but keep it within bounds
     let popup_x = (area.x + 1 + cursor_x as u16).min(area.width.saturating_sub(popup_width + 2));
-    let popup_y = (area.y + 1 + cursor_y as u16 + 1).min(area.height.saturating_sub(popup_height + 1));
+    let popup_y =
+        (area.y + 1 + cursor_y as u16 + 1).min(area.height.saturating_sub(popup_height + 1));
 
     let popup_area = Rect {
         x: popup_x,
@@ -156,7 +166,11 @@ fn render_autocomplete(
     frame.render_widget(list, popup_area);
 }
 
-fn render_markdown(note: &Note, viewer_state: &ViewerState, vault: &crate::core::Vault) -> Text<'static> {
+fn render_markdown(
+    note: &Note,
+    viewer_state: &ViewerState,
+    vault: &crate::core::Vault,
+) -> Text<'static> {
     let mut lines: Vec<Line<'static>> = Vec::new();
 
     for (line_idx, line) in note.content.lines().enumerate() {
@@ -166,7 +180,13 @@ fn render_markdown(note: &Note, viewer_state: &ViewerState, vault: &crate::core:
     Text::from(lines)
 }
 
-fn render_line(line: &str, note: &Note, viewer_state: &ViewerState, line_idx: usize, vault: &crate::core::Vault) -> Line<'static> {
+fn render_line(
+    line: &str,
+    note: &Note,
+    viewer_state: &ViewerState,
+    line_idx: usize,
+    vault: &crate::core::Vault,
+) -> Line<'static> {
     let trimmed = line.trim();
 
     // Headings
@@ -207,7 +227,13 @@ fn render_line(line: &str, note: &Note, viewer_state: &ViewerState, line_idx: us
     render_inline(line, note, viewer_state, line_idx, vault)
 }
 
-fn render_inline(line: &str, _note: &Note, viewer_state: &ViewerState, line_idx: usize, vault: &crate::core::Vault) -> Line<'static> {
+fn render_inline(
+    line: &str,
+    _note: &Note,
+    viewer_state: &ViewerState,
+    line_idx: usize,
+    vault: &crate::core::Vault,
+) -> Line<'static> {
     let mut spans: Vec<Span<'static>> = Vec::new();
     let mut current = String::new();
     let chars: Vec<char> = line.chars().collect();
@@ -241,20 +267,25 @@ fn render_inline(line: &str, _note: &Note, viewer_state: &ViewerState, line_idx:
 
                 // Extract target and display text
                 let (target, display) = if let Some(pipe_pos) = link_text.find('|') {
-                    (link_text[..pipe_pos].to_string(), link_text[pipe_pos + 1..].to_string())
+                    (
+                        link_text[..pipe_pos].to_string(),
+                        link_text[pipe_pos + 1..].to_string(),
+                    )
                 } else {
                     (link_text.clone(), link_text.clone())
                 };
 
                 // Check if this is the selected link
-                let is_selected = viewer_state.visible_links
+                let is_selected = viewer_state
+                    .visible_links
                     .get(viewer_state.selected_link)
                     .map(|selected| {
-                        selected.line_index == line_idx &&
-                        viewer_state.visible_links[..viewer_state.selected_link]
-                            .iter()
-                            .filter(|l| l.line_index == line_idx)
-                            .count() == link_count_on_line
+                        selected.line_index == line_idx
+                            && viewer_state.visible_links[..viewer_state.selected_link]
+                                .iter()
+                                .filter(|l| l.line_index == line_idx)
+                                .count()
+                                == link_count_on_line
                     })
                     .unwrap_or(false);
 
@@ -283,8 +314,7 @@ fn render_inline(line: &str, _note: &Note, viewer_state: &ViewerState, line_idx:
                         .add_modifier(Modifier::UNDERLINED)
                 };
 
-                spans.push(Span::styled(
-                    format!("[[{}]]", display), style));
+                spans.push(Span::styled(format!("[[{}]]", display), style));
                 link_count_on_line += 1;
             } else {
                 current.push_str("[[");
@@ -308,7 +338,10 @@ fn render_inline(line: &str, _note: &Note, viewer_state: &ViewerState, line_idx:
                 let mut tag = String::from("#");
                 i += 1;
                 while i < chars.len()
-                    && (chars[i].is_alphanumeric() || chars[i] == '-' || chars[i] == '_' || chars[i] == '/')
+                    && (chars[i].is_alphanumeric()
+                        || chars[i] == '-'
+                        || chars[i] == '_'
+                        || chars[i] == '/')
                 {
                     tag.push(chars[i]);
                     i += 1;

@@ -3,9 +3,9 @@ use std::path::PathBuf;
 
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::{backend::CrosstermBackend, Terminal};
+use ratatui::{Terminal, backend::CrosstermBackend};
 
-use crate::app::App;
+use crate::app::{App, CreateNoteState, DeleteConfirmState};
 use crate::ui::{EditorMode, Focus};
 
 pub struct InputHandler;
@@ -21,7 +21,9 @@ impl InputHandler {
 
         // Check if note exists
         if app.vault.get_note(&target_path).is_some() {
-            if let Some(index) = app.vault.visible_entries()
+            if let Some(index) = app
+                .vault
+                .visible_entries()
                 .iter()
                 .position(|e| e.path == target_path)
             {
@@ -34,7 +36,11 @@ impl InputHandler {
         }
     }
 
-    pub fn handle(app: &mut App, key: KeyEvent, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
+    pub fn handle(
+        app: &mut App,
+        key: KeyEvent,
+        terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    ) -> Result<()> {
         if app.show_help {
             match key.code {
                 KeyCode::Esc => {
@@ -48,6 +54,18 @@ impl InputHandler {
                 }
                 _ => {}
             }
+            return Ok(());
+        }
+
+        // Handle create note dialog
+        if app.create_note_state.is_some() {
+            Self::handle_create_dialog(app, key)?;
+            return Ok(());
+        }
+
+        // Handle delete confirmation dialog
+        if app.delete_confirm_state.is_some() {
+            Self::handle_delete_dialog(app, key)?;
             return Ok(());
         }
 
@@ -151,6 +169,38 @@ impl InputHandler {
             KeyCode::Char('G') => {
                 app.browser_state.move_to_bottom(&app.vault);
             }
+            KeyCode::Char('a') => {
+                // Create new note - determine parent directory
+                let parent_dir = if let Some(entry) = app.browser_state.selected_entry(&app.vault) {
+                    if entry.is_dir {
+                        entry.path.clone()
+                    } else {
+                        entry
+                            .path
+                            .parent()
+                            .map(|p| p.to_path_buf())
+                            .unwrap_or_default()
+                    }
+                } else {
+                    PathBuf::new()
+                };
+
+                app.create_note_state = Some(CreateNoteState {
+                    filename: String::new(),
+                    parent_dir,
+                });
+            }
+            KeyCode::Char('d') => {
+                // Delete note - only for files, not directories
+                if let Some(entry) = app.browser_state.selected_entry(&app.vault) {
+                    if !entry.is_dir {
+                        app.delete_confirm_state = Some(DeleteConfirmState {
+                            path: entry.path.clone(),
+                            name: entry.name.clone(),
+                        });
+                    }
+                }
+            }
             _ => {}
         }
     }
@@ -206,11 +256,15 @@ impl InputHandler {
         // Handle autocomplete navigation first if active
         if app.viewer_state.autocomplete.is_some() {
             match key.code {
-                KeyCode::Down | KeyCode::Char('n') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                KeyCode::Down | KeyCode::Char('n')
+                    if key.modifiers.contains(KeyModifiers::CONTROL) =>
+                {
                     app.viewer_state.autocomplete_next();
                     return;
                 }
-                KeyCode::Up | KeyCode::Char('p') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                KeyCode::Up | KeyCode::Char('p')
+                    if key.modifiers.contains(KeyModifiers::CONTROL) =>
+                {
                     app.viewer_state.autocomplete_prev();
                     return;
                 }
@@ -290,40 +344,147 @@ impl InputHandler {
 
     fn handle_backlinks(app: &mut App, key: KeyEvent) {
         match key.code {
-        KeyCode::Char('j') | KeyCode::Down => {
-            if let Some(note) = app.selected_note() {
-                let backlinks = app.vault.get_backlinks(&note.path);
-                app.backlinks_state.move_down(&backlinks);
+            KeyCode::Char('j') | KeyCode::Down => {
+                if let Some(note) = app.selected_note() {
+                    let backlinks = app.vault.get_backlinks(&note.path);
+                    app.backlinks_state.move_down(&backlinks);
+                }
+            }
+            KeyCode::Char('k') | KeyCode::Up => {
+                app.backlinks_state.move_up();
+            }
+            KeyCode::Enter => {
+                // Navigate to selected backlink
+                if let Some(note) = app.selected_note() {
+                    let backlinks = app.vault.get_backlinks(&note.path);
+                    if let Some(target_path) = app.backlinks_state.selected_path(&backlinks) {
+                        // Find this note in the browser tree
+                        if let Some(index) = app
+                            .vault
+                            .visible_entries()
+                            .iter()
+                            .position(|e| &e.path == target_path)
+                        {
+                            app.browser_state.select(index);
+                            if let Some(note) = app.vault.get_note(target_path) {
+                                app.viewer_state.update_links(note);
+                            }
+                            app.viewer_scroll = 0;
+                            app.backlinks_state.reset();
+                            app.focus = Focus::Viewer;
+                        }
+                    }
+                }
+            }
+            KeyCode::Char('h') | KeyCode::Left | KeyCode::Esc => {
+                app.focus = Focus::Browser;
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_create_dialog(app: &mut App, key: KeyEvent) -> Result<()> {
+        match key.code {
+            KeyCode::Esc => {
+                app.create_note_state = None;
+            }
+            KeyCode::Enter => {
+                if let Some(state) = app.create_note_state.take() {
+                    if !state.filename.is_empty() {
+                        Self::create_note(app, &state.parent_dir, &state.filename)?;
+                    }
+                }
+            }
+            KeyCode::Backspace => {
+                if let Some(ref mut state) = app.create_note_state {
+                    state.filename.pop();
+                }
+            }
+            KeyCode::Char(c) => {
+                // Only allow valid filename characters
+                if c.is_alphanumeric() || c == '-' || c == '_' || c == ' ' {
+                    if let Some(ref mut state) = app.create_note_state {
+                        state.filename.push(c);
+                    }
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn handle_delete_dialog(app: &mut App, key: KeyEvent) -> Result<()> {
+        match key.code {
+            KeyCode::Char('y') | KeyCode::Char('Y') => {
+                if let Some(state) = app.delete_confirm_state.take() {
+                    Self::delete_note(app, &state.path)?;
+                }
+            }
+            KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+                app.delete_confirm_state = None;
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn create_note(app: &mut App, parent_dir: &std::path::Path, filename: &str) -> Result<()> {
+        // Build the relative path
+        let relative_path = parent_dir.join(format!("{}.md", filename));
+        let full_path = app.vault.root.join(&relative_path);
+
+        // Create the file with a basic header
+        let title = filename.replace(['-', '_'], " ");
+        let content = format!("# {}\n\n", title);
+        std::fs::write(&full_path, content)?;
+
+        // Refresh vault to pick up the new file
+        app.refresh_vault()?;
+
+        // Select the newly created note
+        if let Some(index) = app
+            .vault
+            .visible_entries()
+            .iter()
+            .position(|e| e.path == relative_path)
+        {
+            app.browser_state.select(index);
+            if let Some(note) = app.vault.get_note(&relative_path) {
+                app.viewer_state.update_links(note);
             }
         }
-        KeyCode::Char('k') | KeyCode::Up => {
-            app.backlinks_state.move_up();
-        }
-        KeyCode::Enter => {
-            // Navigate to selected backlink
-            if let Some(note) = app.selected_note() {
-                let backlinks = app.vault.get_backlinks(&note.path);
-                if let Some(target_path) = app.backlinks_state.selected_path(&backlinks) {
-                    // Find this note in the browser tree
-                    if let Some(index) = app.vault.visible_entries()
-                        .iter()
-                        .position(|e| &e.path == target_path)
-                    {
-                        app.browser_state.select(index);
-                        if let Some(note) = app.vault.get_note(target_path) {
-                            app.viewer_state.update_links(note);
-                        }
-                        app.viewer_scroll = 0;
-                        app.backlinks_state.reset();
-                        app.focus = Focus::Viewer;
+
+        Ok(())
+    }
+
+    fn delete_note(app: &mut App, path: &PathBuf) -> Result<()> {
+        let full_path = app.vault.root.join(path);
+
+        // Delete the file
+        std::fs::remove_file(&full_path)?;
+
+        // Get current selection before refresh
+        let current_idx = app.browser_state.selected;
+
+        // Refresh vault
+        app.refresh_vault()?;
+
+        // Adjust selection if needed (stay in bounds)
+        let visible_count = app.vault.visible_entries().len();
+        if visible_count > 0 {
+            let new_idx = current_idx.min(visible_count - 1);
+            app.browser_state.select(new_idx);
+
+            // Update viewer state if we have a selection
+            if let Some(entry) = app.browser_state.selected_entry(&app.vault) {
+                if !entry.is_dir {
+                    if let Some(note) = app.vault.get_note(&entry.path) {
+                        app.viewer_state.update_links(note);
                     }
                 }
             }
         }
-        KeyCode::Char('h') | KeyCode::Left | KeyCode::Esc => {
-            app.focus = Focus::Browser;
-        }
-        _ => {}
+
+        Ok(())
     }
-}
 }
