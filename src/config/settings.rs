@@ -50,7 +50,7 @@ fn default_true() -> bool {
 }
 
 fn default_editor() -> String {
-    std::env::var("EDITOR").unwrap_or_else(|_| "vi".to_string())
+    std::env::var("EDITOR").unwrap_or_else(|_| "nvim".to_string())
 }
 
 impl Default for VaultConfig {

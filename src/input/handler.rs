@@ -1,6 +1,9 @@
+use std::io::Stdout;
 use std::path::PathBuf;
 
+use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use ratatui::{backend::CrosstermBackend, Terminal};
 
 use crate::app::App;
 use crate::ui::Focus;
@@ -31,20 +34,25 @@ impl InputHandler {
         }
     }
 
-    pub fn handle(app: &mut App, key: KeyEvent) {
+    pub fn handle(app: &mut App, key: KeyEvent, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
         // Global keybindings (work in any focus)
         match key.code {
             KeyCode::Char('q') => {
                 app.should_quit = true;
-                return;
+                return Ok(());
             }
             KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 app.should_quit = true;
-                return;
+                return Ok(());
+            }
+            KeyCode::Char('e') => {
+                // Open in external editor
+                app.open_in_editor(terminal)?;
+                return Ok(());
             }
             KeyCode::Tab => {
                 app.focus = app.focus.next();
-                return;
+                return Ok(());
             }
             _ => {}
         }
@@ -54,6 +62,8 @@ impl InputHandler {
             Focus::Browser => Self::handle_browser(app, key),
             Focus::Viewer => Self::handle_viewer(app, key),
         }
+
+        Ok(())
     }
 
     fn handle_browser(app: &mut App, key: KeyEvent) {

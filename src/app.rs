@@ -71,7 +71,7 @@ impl App {
             if event::poll(Duration::from_millis(100))? {
                 if let Event::Key(key) = event::read()? {
                     if key.kind == KeyEventKind::Press {
-                        InputHandler::handle(self, key);
+                        InputHandler::handle(self, key, terminal)?;
                     }
                 }
             }
@@ -94,6 +94,30 @@ impl App {
     pub fn refresh_vault(&mut self) -> Result<()> {
         self.vault = Vault::open(&self.config.vault.path)?;
         self.browser_state = ui::BrowserState::new(&self.vault);
+        Ok(())
+    }
+
+    pub fn open_in_editor(&mut self, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
+        if let Some(entry) = self.browser_state.selected_entry(&self.vault) {
+            if !entry.is_dir {
+                let note_path = self.vault.root.join(&entry.path);
+
+                // Suspend TUI
+                self.restore_terminal(terminal)?;
+
+                // Launch editor
+                std::process::Command::new(&self.config.editor.external)
+                    .arg(&note_path)
+                    .status()?;
+
+                // Resume TUI
+                *terminal = self.setup_terminal()?;
+                terminal.clear()?;
+
+                // Reload vault to pick up changes
+                self.refresh_vault()?;
+            }
+        }
         Ok(())
     }
 }
