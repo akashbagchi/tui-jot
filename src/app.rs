@@ -96,9 +96,29 @@ impl App {
     }
 
     pub fn refresh_vault(&mut self) -> Result<()> {
+        // Preserve the currently selected path before refreshing
+        let selected_path = self.browser_state
+            .selected_entry(&self.vault)
+            .map(|e| e.path.clone());
+
         self.vault = Vault::open(&self.config.vault.path)?;
         self.browser_state = ui::BrowserState::new(&self.vault);
         self.backlinks_state.reset();
+
+        // Restore selection if the path still exists
+        if let Some(path) = selected_path {
+            if let Some(index) = self.vault.visible_entries()
+                .iter()
+                .position(|e| e.path == path)
+            {
+                self.browser_state.select(index);
+                // Also update viewer state to reflect the reloaded note
+                if let Some(note) = self.vault.get_note(&path) {
+                    self.viewer_state.update_links(note);
+                }
+            }
+        }
+
         Ok(())
     }
 

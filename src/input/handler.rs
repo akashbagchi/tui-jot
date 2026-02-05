@@ -74,7 +74,21 @@ impl InputHandler {
                 return Ok(());
             }
             KeyCode::Tab => {
+                let old_focus = app.focus;
                 app.focus = app.focus.next();
+
+                // Sync viewer state when switching from Browser to Viewer
+                if old_focus == Focus::Browser && app.focus == Focus::Viewer {
+                    if let Some(entry) = app.browser_state.selected_entry(&app.vault) {
+                        if !entry.is_dir {
+                            let path = entry.path.clone();
+                            if let Some(note) = app.vault.get_note(&path) {
+                                app.viewer_state.update_links(note);
+                                app.viewer_scroll = 0;
+                            }
+                        }
+                    }
+                }
                 return Ok(());
             }
             KeyCode::Char('b') if key.modifiers.contains(KeyModifiers::CONTROL) => {

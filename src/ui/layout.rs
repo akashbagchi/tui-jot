@@ -90,9 +90,9 @@ fn render_backlinks(frame: &mut Frame, area: Rect, app: &App) {
 
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
     let help_text = match app.focus {
-        Focus::Browser => "j/k: navigate  Enter: open  e: edit  Tab: switch pane  Ctrl+Shift+K: help  q: quit",
-        Focus::Viewer => "j/k: scroll  h/Esc: back  e: edit  Tab: switch pane  Ctrl+Shift+K: help  q: quit",
-        Focus::Backlinks => "j/k: navigate  Enter: open  Tab: switch pane  Ctrl+Shift+K: help  q: quit"
+        Focus::Browser => "j/k: navigate  Enter: open  i: edit  Tab: switch pane  q: quit",
+        Focus::Viewer => "j/k: scroll  h/Esc: back  i: edit  Tab: switch pane  q: quit",
+        Focus::Backlinks => "j/k: navigate  Enter: open  Tab: switch pane  q: quit"
     };
 
     let note_info = app.selected_note()

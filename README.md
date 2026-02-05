@@ -37,9 +37,10 @@ tui-jot
 | `j` / `k` | Navigate down / up |
 | `Enter` | Open note or follow link |
 | `Tab` | Switch between browser and preview |
+| `i` | (in preview pane) Edit note |
 | `Ctrl+b` | Toggle backlinks panel |
 | `Ctrl+n` / `Ctrl+p` | Next / previous link (in preview) |
-| `e` | Open in external editor |
+| `Ctrl+e` | Open in external editor |
 | `q` | Quit |
 
 ## Configuration
