@@ -23,6 +23,7 @@ pub struct App {
     pub viewer_scroll: u16,
     pub viewer_state: ui::ViewerState,
     pub backlinks_state: ui::BacklinksState,
+    pub show_help: bool,
 }
 
 impl App {
@@ -39,6 +40,7 @@ impl App {
             viewer_scroll: 0,
             viewer_state: ui::ViewerState::new(),
             backlinks_state: ui::BacklinksState::new(),
+            show_help: false,
         })
     }
 

@@ -2,7 +2,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders, Clear, Paragraph},
     Frame,
 };
 
@@ -40,6 +40,10 @@ pub fn render(frame: &mut Frame, app: &App) {
     render_title_bar(frame, chunks[0], app);
     render_main(frame, chunks[1], app);
     render_status_bar(frame, chunks[2], app);
+
+    if app.show_help {
+        render_help(frame, app);
+    }
 }
 
 fn render_title_bar(frame: &mut Frame, area: Rect, app: &App) {
@@ -86,9 +90,9 @@ fn render_backlinks(frame: &mut Frame, area: Rect, app: &App) {
 
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
     let help_text = match app.focus {
-        Focus::Browser => "j/k: navigate  Enter: open  e: edit  Tab: switch pane  q: quit",
-        Focus::Viewer => "j/k: scroll  h/Esc: back  e: edit  Tab: switch pane  q: quit",
-        Focus::Backlinks => "j/k: navigate  Enter: open  Tab: switch pane  q: quit"
+        Focus::Browser => "j/k: navigate  Enter: open  e: edit  Tab: switch pane  Ctrl+Shift+K: help  q: quit",
+        Focus::Viewer => "j/k: scroll  h/Esc: back  e: edit  Tab: switch pane  Ctrl+Shift+K: help  q: quit",
+        Focus::Backlinks => "j/k: navigate  Enter: open  Tab: switch pane  Ctrl+Shift+K: help  q: quit"
     };
 
     let note_info = app.selected_note()
@@ -109,4 +113,60 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
         .style(Style::default().bg(Color::Black));
 
     frame.render_widget(status_bar, area);
+}
+
+fn render_help(frame: &mut Frame, app: &App) {
+    let area = centered_rect(60, 60, frame.area());
+    frame.render_widget(Clear, area);
+
+    let block = Block::default()
+        .title(" Keybindings ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Cyan));
+
+    let keybindings = vec![
+        ("j/k", "Navigate down/up"),
+        ("Enter", "Open note or follow link"),
+        ("Tab", "Switch between browser and preview"),
+        ("Ctrl+b", "Toggle backlinks panel"),
+        ("Ctrl+n/p", "Next/previous link (preview)"),
+        ("Ctrl+Shift+K", "Toggle this help menu"),
+        ("e", "Open in external editor"),
+        ("q", "Quit"),
+        ("Esc", "Close help / Go back"),
+    ];
+
+    let mut text = Vec::new();
+    for (key, action) in keybindings {
+        text.push(Line::from(vec![
+            Span::styled(format!("{:<15}", key), Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+            Span::raw(action),
+        ]));
+    }
+
+    let help_paragraph = Paragraph::new(text)
+        .block(block)
+        .style(Style::default().fg(Color::White));
+
+    frame.render_widget(help_paragraph, area);
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((100 - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((100 - percent_y) / 2),
+        ])
+        .split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ])
+        .split(popup_layout[1])[1]
 }

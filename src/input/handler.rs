@@ -35,6 +35,22 @@ impl InputHandler {
     }
 
     pub fn handle(app: &mut App, key: KeyEvent, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
+        if app.show_help {
+            match key.code {
+                KeyCode::Esc => {
+                    app.show_help = false;
+                }
+                KeyCode::Char('k') | KeyCode::Char('K')
+                    if key.modifiers.contains(KeyModifiers::CONTROL)
+                        && key.modifiers.contains(KeyModifiers::SHIFT) =>
+                {
+                    app.show_help = false;
+                }
+                _ => {}
+            }
+            return Ok(());
+        }
+
         // Global keybindings (work in any focus)
         match key.code {
             KeyCode::Char('q') => {
@@ -43,6 +59,13 @@ impl InputHandler {
             }
             KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 app.should_quit = true;
+                return Ok(());
+            }
+            KeyCode::Char('k') | KeyCode::Char('K')
+                if key.modifiers.contains(KeyModifiers::CONTROL)
+                    && key.modifiers.contains(KeyModifiers::SHIFT) =>
+            {
+                app.show_help = true;
                 return Ok(());
             }
             KeyCode::Char('e') if key.modifiers.contains(KeyModifiers::CONTROL) => {
