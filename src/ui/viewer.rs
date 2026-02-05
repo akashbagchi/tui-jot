@@ -1,69 +1,3 @@
-pub struct ViewerState {
-    pub selected_link: usize,
-    pub visible_links: Vec<VisibleLink>,
-}
-
-#[derive(Debug, Clone)]
-pub struct VisibleLink {
-    pub target: String,
-    pub display: String,
-    pub line_index: usize,
-}
-
-impl ViewerState {
-    pub fn new() -> Self {
-        Self {
-            selected_link: 0,
-            visible_links: Vec::new(),
-        }
-    }
-
-    pub fn update_links(&mut self, note: &Note) {
-        self.visible_links.clear();
-        self.selected_link = 0;
-
-        // Build list of visible links with their line positions
-        let mut line_index = 0;
-        for line in note.content.lines() {
-            for link in &note.links {
-                let line_start = note.content[..note.content.len().min(link.span.start)]
-                    .lines()
-                    .count()
-                    .saturating_sub(1);
-
-                if line_start == line_index {
-                    self.visible_links.push(VisibleLink {
-                        target: link.target.clone(),
-                        display: link.display.clone().unwrap_or_else(|| link.target.clone()),
-                        line_index,
-                    });
-                }
-            }
-            line_index += 1;
-        }
-    }
-
-    pub fn next_link(&mut self) {
-        if !self.visible_links.is_empty() {
-            self.selected_link = (self.selected_link + 1) % self.visible_links.len();
-        }
-    }
-
-    pub fn prev_link(&mut self) {
-        if !self.visible_links.is_empty() {
-            self.selected_link = if self.selected_link == 0 {
-                self.visible_links.len() - 1
-            } else {
-                self.selected_link - 1
-            };
-        }
-    }
-
-    pub fn current_link(&self) -> Option<&VisibleLink> {
-        self.visible_links.get(self.selected_link)
-    }
-}
-
 use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
@@ -75,6 +9,7 @@ use ratatui::{
 use crate::app::App;
 use crate::core::Note;
 use crate::ui::layout::Focus;
+use super::viewer_state::{AutocompleteState, EditorMode, ViewerState};
 
 pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     let is_focused = app.focus == Focus::Viewer;
@@ -85,13 +20,25 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
         Style::default().fg(Color::DarkGray)
     };
 
+    let mode_indicator = match app.viewer_state.mode {
+        EditorMode::Read => " Preview ",
+        EditorMode::Edit => if app.viewer_state.dirty {
+            " EDIT [modified] "
+        } else {
+            " EDIT "
+        },
+    };
+
     let block = Block::default()
-        .title(" Preview ")
+        .title(mode_indicator)
         .borders(Borders::ALL)
         .border_style(border_style);
 
     let content = if let Some(note) = app.selected_note() {
-        render_markdown(note, &app.viewer_state, &app.vault)
+        match app.viewer_state.mode {
+            EditorMode::Read => render_markdown(note, &app.viewer_state, &app.vault),
+            EditorMode::Edit => render_edit_mode(&app.viewer_state),
+        }
     } else {
         Text::from(vec![
             Line::from(""),
@@ -108,6 +55,105 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
         .scroll((app.viewer_scroll, 0));
 
     frame.render_widget(paragraph, area);
+
+    // Render autocomplete popup if active
+    if app.viewer_state.mode == EditorMode::Edit {
+        if let Some(ref ac) = app.viewer_state.autocomplete {
+            if !ac.matches.is_empty() {
+                render_autocomplete(frame, area, ac, &app.viewer_state);
+            }
+        }
+    }
+
+    // Set cursor position in EDIT mode
+    if is_focused && app.viewer_state.mode == EditorMode::Edit {
+        let cursor_line = app.viewer_state.cursor.line.saturating_sub(app.viewer_scroll as usize);
+        let cursor_col = app.viewer_state.cursor.col;
+        
+        // Account for border (1 char) and ensure cursor is within visible area
+        let x = area.x + 1 + cursor_col as u16;
+        let y = area.y + 1 + cursor_line as u16;
+        
+        if y >= area.y + 1 && y < area.y + area.height - 1 {
+            frame.set_cursor_position((x, y));
+        }
+    }
+}
+
+fn render_edit_mode(viewer_state: &ViewerState) -> Text<'static> {
+    let mut lines: Vec<Line<'static>> = Vec::new();
+
+    for line_idx in 0..viewer_state.content.len_lines() {
+        let line = viewer_state.content.line(line_idx).to_string();
+        lines.push(Line::from(line));
+    }
+
+    Text::from(lines)
+}
+
+fn render_autocomplete(
+    frame: &mut Frame,
+    area: Rect,
+    ac: &AutocompleteState,
+    viewer_state: &ViewerState,
+) {
+    use ratatui::widgets::{List, ListItem};
+
+    if ac.matches.is_empty() {
+        return;
+    }
+
+    // Calculate popup position (near cursor)
+    let cursor_y = ac.trigger_pos.line.saturating_sub(viewer_state.scroll_offset);
+    let cursor_x = ac.trigger_pos.col + 2; // After [[
+
+    let popup_height = (ac.matches.len() + 2).min(12) as u16;
+    let popup_width = 30;
+
+    // Position popup near cursor, but keep it within bounds
+    let popup_x = (area.x + 1 + cursor_x as u16).min(area.width.saturating_sub(popup_width + 2));
+    let popup_y = (area.y + 1 + cursor_y as u16 + 1).min(area.height.saturating_sub(popup_height + 1));
+
+    let popup_area = Rect {
+        x: popup_x,
+        y: popup_y,
+        width: popup_width,
+        height: popup_height,
+    };
+
+    let items: Vec<ListItem> = ac
+        .matches
+        .iter()
+        .enumerate()
+        .map(|(i, (_, name)): (usize, &(std::path::PathBuf, String))| {
+            let style = if i == ac.selected {
+                Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::White)
+            };
+
+            let display = if name.len() > popup_width as usize - 4 {
+                format!("{}...", &name[..popup_width as usize - 7])
+            } else {
+                name.clone()
+            };
+
+            ListItem::new(Line::from(Span::styled(format!(" {} ", display), style)))
+        })
+        .collect();
+
+    let list = List::new(items).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Yellow))
+            .title(format!(" Notes ({}) ", ac.matches.len()))
+            .style(Style::default().bg(Color::Black)),
+    );
+
+    frame.render_widget(list, popup_area);
 }
 
 fn render_markdown(note: &Note, viewer_state: &ViewerState, vault: &crate::core::Vault) -> Text<'static> {
@@ -157,7 +203,7 @@ fn render_line(line: &str, note: &Note, viewer_state: &ViewerState, line_idx: us
         ));
     }
 
-    // Parse inline elements (tags, links, bold, etc.) - includes lists
+    // Parse inline elements (tags, links, bold, etc.)
     render_inline(line, note, viewer_state, line_idx, vault)
 }
 

@@ -6,7 +6,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{backend::CrosstermBackend, Terminal};
 
 use crate::app::App;
-use crate::ui::Focus;
+use crate::ui::{EditorMode, Focus};
 
 pub struct InputHandler;
 
@@ -119,7 +119,20 @@ impl InputHandler {
     }
 
     fn handle_viewer(app: &mut App, key: KeyEvent) {
+        match app.viewer_state.mode {
+            EditorMode::Read => Self::handle_viewer_read(app, key),
+            EditorMode::Edit => Self::handle_viewer_edit(app, key),
+        }
+    }
+
+    fn handle_viewer_read(app: &mut App, key: KeyEvent) {
         match key.code {
+            KeyCode::Char('i') => {
+                // Enter edit mode
+                if app.selected_note().is_some() {
+                    app.viewer_state.enter_edit_mode();
+                }
+            }
             KeyCode::Char('j') | KeyCode::Down => {
                 app.viewer_scroll = app.viewer_scroll.saturating_add(1);
             }
@@ -147,6 +160,92 @@ impl InputHandler {
             KeyCode::Char('h') | KeyCode::Left | KeyCode::Esc => {
                 // Go back to browser
                 app.focus = Focus::Browser;
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_viewer_edit(app: &mut App, key: KeyEvent) {
+        // Handle autocomplete navigation first if active
+        if app.viewer_state.autocomplete.is_some() {
+            match key.code {
+                KeyCode::Down | KeyCode::Char('n') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    app.viewer_state.autocomplete_next();
+                    return;
+                }
+                KeyCode::Up | KeyCode::Char('p') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    app.viewer_state.autocomplete_prev();
+                    return;
+                }
+                KeyCode::Tab | KeyCode::Enter => {
+                    app.viewer_state.autocomplete_accept();
+                    app.viewer_state.update_autocomplete_matches(&app.vault);
+                    return;
+                }
+                KeyCode::Esc => {
+                    app.viewer_state.autocomplete = None;
+                    return;
+                }
+                _ => {}
+            }
+        }
+
+        match key.code {
+            KeyCode::Esc => {
+                // Exit edit mode and save
+                let content = app.viewer_state.exit_edit_mode();
+                if let Some(path) = app.viewer_state.current_note_path.clone() {
+                    let full_path = app.vault.root.join(&path);
+                    let _ = std::fs::write(&full_path, &content);
+                    // Reload the note
+                    app.vault.reload_note(&path);
+                    if let Some(note) = app.vault.get_note(&path) {
+                        app.viewer_state.update_links(note);
+                    }
+                }
+            }
+            KeyCode::Char(c) => {
+                app.viewer_state.insert_char(c);
+                app.viewer_state.update_autocomplete_matches(&app.vault);
+            }
+            KeyCode::Enter => {
+                app.viewer_state.insert_newline();
+            }
+            KeyCode::Backspace => {
+                app.viewer_state.delete_char();
+                app.viewer_state.update_autocomplete_matches(&app.vault);
+            }
+            KeyCode::Delete => {
+                app.viewer_state.delete_forward();
+                app.viewer_state.update_autocomplete_matches(&app.vault);
+            }
+            KeyCode::Left => {
+                if key.modifiers.contains(KeyModifiers::CONTROL) {
+                    // Word movement - simplified: just move to start of line
+                    app.viewer_state.move_to_line_start();
+                } else {
+                    app.viewer_state.move_cursor_left();
+                }
+            }
+            KeyCode::Right => {
+                if key.modifiers.contains(KeyModifiers::CONTROL) {
+                    // Word movement - simplified: just move to end of line
+                    app.viewer_state.move_to_line_end();
+                } else {
+                    app.viewer_state.move_cursor_right();
+                }
+            }
+            KeyCode::Up => {
+                app.viewer_state.move_cursor_up();
+            }
+            KeyCode::Down => {
+                app.viewer_state.move_cursor_down();
+            }
+            KeyCode::Home => {
+                app.viewer_state.move_to_line_start();
+            }
+            KeyCode::End => {
+                app.viewer_state.move_to_line_end();
             }
             _ => {}
         }

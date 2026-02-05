@@ -135,6 +135,19 @@ impl Vault {
         }
     }
 
+    pub fn reload_note(&mut self, relative_path: &Path) {
+        let full_path = self.root.join(relative_path);
+        if full_path.exists() {
+            if let Ok(content) = std::fs::read_to_string(&full_path) {
+                let modified = std::fs::metadata(&full_path)
+                    .and_then(|m| m.modified())
+                    .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+                let note = Note::from_file(relative_path.to_path_buf(), content, modified);
+                self.notes.insert(relative_path.to_path_buf(), note);
+            }
+        }
+    }
+
     pub fn get_backlinks(&self, note_path: &Path) -> Vec<&Note> {
         let mut backlinks = Vec::new();
 
