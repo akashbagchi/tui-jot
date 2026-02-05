@@ -134,4 +134,40 @@ impl Vault {
             entry.expanded = !entry.expanded;
         }
     }
+
+    pub fn get_backlinks(&self, note_path: &Path) -> Vec<&Note> {
+        let mut backlinks = Vec::new();
+
+        // Normalize the target path - remove .md extension for comparison
+        let target_name = note_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("");
+
+        // Search through all notes for links to this note
+        for (source_path, note) in &self.notes {
+            // Skip note itself
+            if source_path == note_path {
+                continue;
+            }
+
+            for link in &note.links {
+                let link_target = if link.target.ends_with(".md") {
+                    link.target.strip_suffix(".md").unwrap_or(&link.target)
+                } else {
+                    &link.target
+                };
+
+                // Case-insensitive comparison
+                if link_target.eq_ignore_ascii_case(target_name) {
+                    backlinks.push(note);
+                    break;
+                }
+            }
+        }
+
+        backlinks.sort_by(|a, b| a.title.cmp(&b.title));
+
+        backlinks
+    }
 }

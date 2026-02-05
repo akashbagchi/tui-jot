@@ -57,7 +57,7 @@ fn render_title_bar(frame: &mut Frame, area: Rect, app: &App) {
 }
 
 fn render_main(frame: &mut Frame, area: Rect, app: &App) {
-    let chunks = Layout::default()
+    let main_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
             Constraint::Length(app.config.ui.tree_width),
@@ -65,8 +65,66 @@ fn render_main(frame: &mut Frame, area: Rect, app: &App) {
         ])
         .split(area);
 
-    browser::render(frame, chunks[0], app);
-    viewer::render(frame, chunks[1], app);
+    let left_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage(70),
+            Constraint::Min(5),
+        ])
+        .split(main_chunks[0]);
+
+    browser::render(frame, left_chunks[0], app);
+    render_backlinks(frame, left_chunks[1], app);
+    viewer::render(frame, main_chunks[1], app);
+}
+
+fn render_backlinks(frame: &mut Frame, area: Rect, app: &App) {
+    use ratatui::{
+        style::{Color, Style},
+        text::{Line, Span},
+        widgets::{Block, Borders, List, ListItem},
+    };
+
+    let border_style = Style::default().fg(Color::DarkGray);
+
+    let block = Block::default()
+        .title(" Backlinks ")
+        .borders(Borders::ALL)
+        .border_style(border_style);
+
+    let items: Vec<ListItem> = if let Some(note) = app.selected_note() {
+        let backlinks = app.vault.get_backlinks(&note.path);
+
+        if backlinks.is_empty() {
+            vec![ListItem::new(Line::from(Span::styled(
+                        "   No backlinks",
+                        Style::default().fg(Color::DarkGray),
+                        )))]
+        } else {
+            backlinks
+                .iter()
+                .map(|backlink| {
+                    let name = backlink.path
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("Unknown");
+
+                    ListItem::new(Line::from(vec![
+                            Span::raw("  <- "),
+                            Span::styled(name, Style::default().fg(Color::Yellow)),
+                    ]))
+                })
+                .collect()
+        }
+    } else {
+        vec![ListItem::new(Line::from(Span::styled(
+                    "   No note selected",
+                    Style::default().fg(Color::DarkGray),
+                    )))]
+    };
+
+    let list = List::new(items).block(block);
+    frame.render_widget(list, area);
 }
 
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {

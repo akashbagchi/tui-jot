@@ -22,7 +22,7 @@ impl ViewerState {
         self.visible_links.clear();
         self.selected_link = 0;
 
-        // Bulid list of visible links with their line positions
+        // Build list of visible links with their line positions
         let mut line_index = 0;
         for line in note.content.lines() {
             for link in &note.links {
