@@ -42,7 +42,7 @@ pub fn render(frame: &mut Frame, app: &App) {
     render_status_bar(frame, chunks[2], app);
 
     if app.show_help {
-        render_help(frame, app);
+        render_help(frame);
     }
 }
 
@@ -115,8 +115,34 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
     frame.render_widget(status_bar, area);
 }
 
-fn render_help(frame: &mut Frame, app: &App) {
-    let area = centered_rect(60, 60, frame.area());
+fn render_help(frame: &mut Frame) {
+    let keybindings = vec![
+        ("Navigation", vec![
+            ("j / k", "Move down / up"),
+            ("Enter", "Open note or follow link"),
+            ("Tab", "Switch pane"),
+            ("h / Esc", "Go back"),
+        ]),
+        ("Viewer", vec![
+            ("i", "Enter edit mode"),
+            ("Ctrl+n / p", "Next / previous link"),
+            ("Ctrl+d / u", "Page down / up"),
+        ]),
+        ("Global", vec![
+            ("Ctrl+e", "Open in external editor"),
+            ("Ctrl+b", "Toggle backlinks panel"),
+            ("Ctrl+Shift+K", "Toggle this help"),
+            ("q", "Quit"),
+        ]),
+    ];
+
+    // Calculate content size
+    let content_height = keybindings.iter()
+        .map(|(_, items)| items.len() + 2) // +2 for header and blank line
+        .sum::<usize>() + 1;
+    let content_width = 42;
+
+    let area = centered_fixed_rect(content_width, content_height as u16, frame.area());
     frame.render_widget(Clear, area);
 
     let block = Block::default()
@@ -124,24 +150,21 @@ fn render_help(frame: &mut Frame, app: &App) {
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Cyan));
 
-    let keybindings = vec![
-        ("j/k", "Navigate down/up"),
-        ("Enter", "Open note or follow link"),
-        ("Tab", "Switch between browser and preview"),
-        ("Ctrl+b", "Toggle backlinks panel"),
-        ("Ctrl+n/p", "Next/previous link (preview)"),
-        ("Ctrl+Shift+K", "Toggle this help menu"),
-        ("e", "Open in external editor"),
-        ("q", "Quit"),
-        ("Esc", "Close help / Go back"),
-    ];
-
     let mut text = Vec::new();
-    for (key, action) in keybindings {
-        text.push(Line::from(vec![
-            Span::styled(format!("{:<15}", key), Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
-            Span::raw(action),
-        ]));
+    for (i, (section, items)) in keybindings.iter().enumerate() {
+        if i > 0 {
+            text.push(Line::from(""));
+        }
+        text.push(Line::from(Span::styled(
+            *section,
+            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+        )));
+        for (key, action) in items {
+            text.push(Line::from(vec![
+                Span::styled(format!("  {:<14}", key), Style::default().fg(Color::Yellow)),
+                Span::raw(*action),
+            ]));
+        }
     }
 
     let help_paragraph = Paragraph::new(text)
@@ -151,22 +174,12 @@ fn render_help(frame: &mut Frame, app: &App) {
     frame.render_widget(help_paragraph, area);
 }
 
-fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
-    let popup_layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage((100 - percent_y) / 2),
-            Constraint::Percentage(percent_y),
-            Constraint::Percentage((100 - percent_y) / 2),
-        ])
-        .split(r);
+fn centered_fixed_rect(width: u16, height: u16, r: Rect) -> Rect {
+    let popup_width = width.min(r.width.saturating_sub(4));
+    let popup_height = height.min(r.height.saturating_sub(2));
 
-    Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage((100 - percent_x) / 2),
-            Constraint::Percentage(percent_x),
-            Constraint::Percentage((100 - percent_x) / 2),
-        ])
-        .split(popup_layout[1])[1]
+    let x = r.x + (r.width.saturating_sub(popup_width)) / 2;
+    let y = r.y + (r.height.saturating_sub(popup_height)) / 2;
+
+    Rect::new(x, y, popup_width, popup_height)
 }
