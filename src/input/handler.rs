@@ -45,7 +45,7 @@ impl InputHandler {
                 app.should_quit = true;
                 return Ok(());
             }
-            KeyCode::Char('e') => {
+            KeyCode::Char('e') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 // Open in external editor
                 app.open_in_editor(terminal)?;
                 return Ok(());
