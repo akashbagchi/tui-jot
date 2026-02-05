@@ -4,13 +4,13 @@ A terminal-based notetaking application with wiki-style linking, built with Rust
 
 ## Features
 
-- **File browser** — Navigate your notes directory with a tree view
-- **Markdown preview** — Syntax highlighting for headings, bold, code, and more
-- **Wiki-links** — Link notes with `[[note-name]]` syntax
+- **File browser** — Navigate your notes directory with a tree view; create and delete notes in-place
+- **Markdown rendering** — Syntax highlighting for headings, bold, italic, code blocks, and links
+- **In-app editing** — Vim-style modal editing with READ and EDIT modes
+- **Wiki-links** — Link notes with `[[note-name]]` syntax; autocomplete suggestions while typing
 - **Tags** — Organize with inline `#tags` and hierarchical `#parent/child` tags
 - **Backlinks** — See which notes link to the current note
-- **External editor** — Open notes in your preferred editor
-- **Vim-style navigation** — Keyboard-driven interface
+- **Keyboard-driven** — Vim-style navigation throughout
 
 ## Installation
 
@@ -32,15 +32,33 @@ tui-jot
 
 ### Keybindings
 
+#### Browser
+
 | Key | Action |
 |-----|--------|
 | `j` / `k` | Navigate down / up |
-| `Enter` | Open note or follow link |
-| `Tab` | Switch between browser and preview |
-| `i` | (in preview pane) Edit note |
+| `Enter` | Open note / expand directory |
+| `a` | Create new note |
+| `d` | Delete note |
+| `Tab` | Switch to viewer |
+
+#### Viewer
+
+| Key | Action |
+|-----|--------|
+| `i` | Enter edit mode |
+| `Esc` | Exit edit mode (saves) / return to browser |
+| `j` / `k` | Scroll down / up |
+| `Enter` | Follow highlighted link |
+| `Ctrl+n` / `Ctrl+p` | Next / previous link |
+
+#### Global
+
+| Key | Action |
+|-----|--------|
 | `Ctrl+b` | Toggle backlinks panel |
-| `Ctrl+n` / `Ctrl+p` | Next / previous link (in preview) |
 | `Ctrl+e` | Open in external editor |
+| `Ctrl+Shift+k` | Toggle help |
 | `q` | Quit |
 
 ## Configuration
