@@ -12,15 +12,22 @@ pub struct InputHandler;
 
 impl InputHandler {
     fn follow_link(app: &mut App, target: &str) {
-        // Normalize target - add .md extension if not present
-        let target_path = if target.ends_with(".md") {
-            PathBuf::from(target)
+        // Normalize target - strip .md extension for comparison
+        let target_name = if target.ends_with(".md") {
+            target.strip_suffix(".md").unwrap_or(target)
         } else {
-            PathBuf::from(format!("{}.md", target))
+            target
         };
 
-        // Check if note exists
-        if app.vault.get_note(&target_path).is_some() {
+        // Find the note by case-insensitive name match (handles subdirectories too)
+        let found_path = app.vault.notes.keys().find(|path| {
+            path.file_stem()
+                .and_then(|s| s.to_str())
+                .map(|name| name.eq_ignore_ascii_case(target_name))
+                .unwrap_or(false)
+        }).cloned();
+
+        if let Some(target_path) = found_path {
             if let Some(index) = app
                 .vault
                 .visible_entries()
