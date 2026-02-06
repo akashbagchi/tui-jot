@@ -11,7 +11,7 @@ use crossterm::{
 use ratatui::{Terminal, backend::CrosstermBackend};
 
 use crate::config::Config;
-use crate::core::Vault;
+use crate::core::{Index, Vault};
 use crate::input::InputHandler;
 use crate::ui::{self, Focus};
 
@@ -30,6 +30,7 @@ pub struct DeleteConfirmState {
 pub struct App {
     pub config: Config,
     pub vault: Vault,
+    pub index: Index,
     pub focus: Focus,
     pub should_quit: bool,
     pub browser_state: ui::BrowserState,
@@ -39,16 +40,22 @@ pub struct App {
     pub show_help: bool,
     pub create_note_state: Option<CreateNoteState>,
     pub delete_confirm_state: Option<DeleteConfirmState>,
+    pub tag_filter_state: Option<ui::TagFilterState>,
+    pub active_tag_filter: Option<String>,
+    pub search_state: Option<ui::SearchState>,
+    pub finder_state: Option<ui::FinderState>,
 }
 
 impl App {
     pub fn new(config: Config) -> Result<Self> {
         let vault = Vault::open(&config.vault.path)?;
+        let index = Index::build(&vault);
         let browser_state = ui::BrowserState::new(&vault);
 
         Ok(Self {
             config,
             vault,
+            index,
             focus: Focus::Browser,
             should_quit: false,
             browser_state,
@@ -58,6 +65,10 @@ impl App {
             show_help: false,
             create_note_state: None,
             delete_confirm_state: None,
+            tag_filter_state: None,
+            active_tag_filter: None,
+            search_state: None,
+            finder_state: None,
         })
     }
 
@@ -108,21 +119,56 @@ impl App {
         Ok(())
     }
 
+    /// Returns visible entries filtered by the active tag filter (if any).
+    /// When a tag filter is active, only shows notes that have that tag
+    /// (plus their parent directories to preserve tree structure).
+    pub fn filtered_visible_entries(&self) -> Vec<&crate::core::TreeEntry> {
+        let entries = self.vault.visible_entries();
+
+        let tag = match &self.active_tag_filter {
+            Some(tag) => tag,
+            None => return entries,
+        };
+
+        let matching_paths = match self.index.notes_with_tag(tag) {
+            Some(paths) => paths,
+            None => return Vec::new(),
+        };
+
+        // Include entries whose path matches the tag, or directories that are
+        // ancestors of matching entries
+        entries
+            .into_iter()
+            .filter(|entry| {
+                if entry.is_dir {
+                    // Keep directory if any matching note is under it
+                    matching_paths.iter().any(|p| p.starts_with(&entry.path))
+                } else {
+                    matching_paths.contains(&entry.path)
+                }
+            })
+            .collect()
+    }
+
     pub fn selected_note(&self) -> Option<&crate::core::Note> {
+        let entries = self.filtered_visible_entries();
         self.browser_state
-            .selected_entry(&self.vault)
+            .selected_entry(&entries)
             .filter(|entry| !entry.is_dir)
             .and_then(|entry| self.vault.get_note(&entry.path))
     }
 
     pub fn refresh_vault(&mut self) -> Result<()> {
         // Preserve the currently selected path before refreshing
-        let selected_path = self
-            .browser_state
-            .selected_entry(&self.vault)
-            .map(|e| e.path.clone());
+        let selected_path = {
+            let entries = self.filtered_visible_entries();
+            self.browser_state
+                .selected_entry(&entries)
+                .map(|e| e.path.clone())
+        };
 
         self.vault = Vault::open(&self.config.vault.path)?;
+        self.index = Index::build(&self.vault);
         self.browser_state = ui::BrowserState::new(&self.vault);
         self.backlinks_state.reset();
 
@@ -149,25 +195,28 @@ impl App {
         &mut self,
         terminal: &mut Terminal<CrosstermBackend<Stdout>>,
     ) -> Result<()> {
-        if let Some(entry) = self.browser_state.selected_entry(&self.vault) {
-            if !entry.is_dir {
-                let note_path = self.vault.root.join(&entry.path);
+        let note_path = {
+            let entries = self.filtered_visible_entries();
+            self.browser_state
+                .selected_entry(&entries)
+                .filter(|e| !e.is_dir)
+                .map(|e| self.vault.root.join(&e.path))
+        };
+        if let Some(note_path) = note_path {
+            // Suspend TUI
+            self.restore_terminal(terminal)?;
 
-                // Suspend TUI
-                self.restore_terminal(terminal)?;
+            // Launch editor
+            std::process::Command::new(&self.config.editor.external)
+                .arg(&note_path)
+                .status()?;
 
-                // Launch editor
-                std::process::Command::new(&self.config.editor.external)
-                    .arg(&note_path)
-                    .status()?;
+            // Resume TUI
+            *terminal = self.setup_terminal()?;
+            terminal.clear()?;
 
-                // Resume TUI
-                *terminal = self.setup_terminal()?;
-                terminal.clear()?;
-
-                // Reload vault to pick up changes
-                self.refresh_vault()?;
-            }
+            // Reload vault to pick up changes
+            self.refresh_vault()?;
         }
         Ok(())
     }

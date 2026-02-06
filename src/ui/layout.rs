@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::app::{App, CreateNoteState, DeleteConfirmState};
 
-use super::{backlinks, browser, viewer};
+use super::{backlinks, browser, finder, search, tag_filter, viewer};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Focus {
@@ -51,6 +51,18 @@ pub fn render(frame: &mut Frame, app: &App) {
 
     if let Some(state) = &app.delete_confirm_state {
         render_delete_dialog(frame, state);
+    }
+
+    if let Some(state) = &app.tag_filter_state {
+        tag_filter::render(frame, frame.area(), state);
+    }
+
+    if let Some(state) = &app.search_state {
+        search::render(frame, frame.area(), state);
+    }
+
+    if let Some(state) = &app.finder_state {
+        finder::render(frame, frame.area(), state);
     }
 }
 
@@ -99,8 +111,8 @@ fn render_backlinks(frame: &mut Frame, area: Rect, app: &App) {
 
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
     let help_text = match app.focus {
-        Focus::Browser => "j/k: navigate  Enter: open  a: new  d: delete  Tab: switch  q: quit",
-        Focus::Viewer => "j/k: scroll  h/Esc: back  i: edit  Tab: switch pane  q: quit",
+        Focus::Browser => "j/k: navigate  Enter: open  a: new  d: delete  t: tags  /: search  q: quit",
+        Focus::Viewer => "j/k: scroll  h/Esc: back  i: edit  /: search  Ctrl+p: find  q: quit",
         Focus::Backlinks => "j/k: navigate  Enter: open  Tab: switch pane  q: quit",
     };
 
@@ -140,7 +152,11 @@ fn render_help(frame: &mut Frame) {
         ),
         (
             "Browser",
-            vec![("a", "Create new note"), ("d", "Delete note")],
+            vec![
+                ("a", "Create new note"),
+                ("d", "Delete note"),
+                ("t", "Filter by tag"),
+            ],
         ),
         (
             "Viewer",
@@ -153,6 +169,8 @@ fn render_help(frame: &mut Frame) {
         (
             "Global",
             vec![
+                ("/", "Full-text search"),
+                ("Ctrl+p", "Find note"),
                 ("Ctrl+e", "Open in external editor"),
                 ("Ctrl+b", "Toggle backlinks panel"),
                 ("Ctrl+Shift+K", "Toggle this help"),

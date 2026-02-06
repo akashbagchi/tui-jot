@@ -1,7 +1,7 @@
 use ropey::Rope;
 use std::path::PathBuf;
 
-use crate::core::Note;
+use crate::core::{self, Note};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EditorMode {
@@ -296,7 +296,7 @@ impl ViewerState {
             // Simple fuzzy matching - collect all notes that contain query chars in order
             for (path, note) in &vault.notes {
                 let name = note.title.to_lowercase();
-                if query_lower.is_empty() || fuzzy_match(&query_lower, &name) {
+                if query_lower.is_empty() || core::fuzzy_match(&query_lower, &name) {
                     ac.matches.push((path.clone(), note.title.clone()));
                 }
             }
@@ -361,21 +361,4 @@ impl ViewerState {
             }
         }
     }
-}
-
-fn fuzzy_match(query: &str, text: &str) -> bool {
-    let mut query_chars = query.chars();
-    let mut current = query_chars.next();
-
-    for c in text.chars() {
-        if let Some(q) = current {
-            if c == q {
-                current = query_chars.next();
-            }
-        } else {
-            return true;
-        }
-    }
-
-    current.is_none()
 }

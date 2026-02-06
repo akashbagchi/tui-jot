@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use ratatui::{
     Frame,
     layout::Rect,
@@ -28,15 +26,14 @@ impl BrowserState {
         }
     }
 
-    pub fn move_down(&mut self, vault: &Vault) {
-        let visible = vault.visible_entries();
-        if self.selected < visible.len().saturating_sub(1) {
+    pub fn move_down(&mut self, count: usize) {
+        if self.selected < count.saturating_sub(1) {
             self.selected += 1;
             self.list_state.select(Some(self.selected));
         }
     }
 
-    pub fn move_up(&mut self, _vault: &Vault) {
+    pub fn move_up(&mut self) {
         if self.selected > 0 {
             self.selected -= 1;
             self.list_state.select(Some(self.selected));
@@ -48,9 +45,8 @@ impl BrowserState {
         self.list_state.select(Some(0));
     }
 
-    pub fn move_to_bottom(&mut self, vault: &Vault) {
-        let visible = vault.visible_entries();
-        self.selected = visible.len().saturating_sub(1);
+    pub fn move_to_bottom(&mut self, count: usize) {
+        self.selected = count.saturating_sub(1);
         self.list_state.select(Some(self.selected));
     }
 
@@ -59,12 +55,8 @@ impl BrowserState {
         self.list_state.select(Some(index));
     }
 
-    pub fn selected_entry<'a>(&self, vault: &'a Vault) -> Option<&'a TreeEntry> {
-        vault.visible_entries().get(self.selected).copied()
-    }
-
-    pub fn selected_path(&self) -> Option<&Path> {
-        None // Will be implemented with proper state
+    pub fn selected_entry<'a>(&self, entries: &'a [&TreeEntry]) -> Option<&'a TreeEntry> {
+        entries.get(self.selected).copied()
     }
 }
 
@@ -77,12 +69,18 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
         Style::default().fg(Color::DarkGray)
     };
 
+    let title = if let Some(ref tag) = app.active_tag_filter {
+        format!(" Notes [#{}] ", tag)
+    } else {
+        " Notes ".to_string()
+    };
+
     let block = Block::default()
-        .title(" Notes ")
+        .title(title)
         .borders(Borders::ALL)
         .border_style(border_style);
 
-    let visible = app.vault.visible_entries();
+    let visible = app.filtered_visible_entries();
 
     let items: Vec<ListItem> = visible
         .iter()
