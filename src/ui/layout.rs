@@ -111,9 +111,9 @@ fn render_backlinks(frame: &mut Frame, area: Rect, app: &App) {
 
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
     let help_text = match app.focus {
-        Focus::Browser => "j/k: navigate  Enter: open  a: new  d: delete  t: tags  /: search  q: quit",
-        Focus::Viewer => "j/k: scroll  h/Esc: back  i: edit  /: search  Ctrl+p: find  q: quit",
-        Focus::Backlinks => "j/k: navigate  Enter: open  Tab: switch pane  q: quit",
+        Focus::Browser => "j/k: navigate  Enter: open  a: new  d: delete  t: tags  /: search  Ctrl+q: quit",
+        Focus::Viewer => "j/k: scroll  h/Esc: back  i: edit  /: search  Ctrl+p: find  Ctrl+q: quit",
+        Focus::Backlinks => "j/k: navigate  Enter: open  Tab: switch pane  Ctrl+q: quit",
     };
 
     let note_info = app
@@ -174,7 +174,7 @@ fn render_help(frame: &mut Frame) {
                 ("Ctrl+e", "Open in external editor"),
                 ("Ctrl+b", "Toggle backlinks panel"),
                 ("Ctrl+Shift+K", "Toggle this help"),
-                ("q", "Quit"),
+                ("Ctrl+q", "Quit"),
             ],
         ),
     ];

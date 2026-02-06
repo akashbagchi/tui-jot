@@ -101,7 +101,10 @@ impl InputHandler {
 
         // Global keybindings (work in any focus)
         match key.code {
-            KeyCode::Char('q') if app.viewer_state.mode != EditorMode::Edit => {
+            KeyCode::Char('q') 
+                if app.viewer_state.mode != EditorMode::Edit
+                    && key.modifiers.contains(KeyModifiers::CONTROL) => 
+            {
                 app.should_quit = true;
                 return Ok(());
             }
