@@ -23,8 +23,10 @@ pub struct CreateNoteState {
 
 /// State for the delete confirmation dialog
 pub struct DeleteConfirmState {
-    pub path: PathBuf, // Relative path to delete
-    pub name: String,  // Display name for dialog
+    pub path: PathBuf,    // Relative path to delete
+    pub name: String,     // Display name for dialog
+    pub is_dir: bool,     // Whether the entry is a directory
+    pub note_count: usize, // Number of notes inside (directories only)
 }
 
 pub struct App {

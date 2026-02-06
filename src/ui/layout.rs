@@ -251,17 +251,6 @@ fn render_create_dialog(frame: &mut Frame, state: &CreateNoteState) {
         &parent_display
     };
 
-    // Build the full path preview
-    let full_path = if state.filename.is_empty() {
-        parent_text.to_string()
-    } else {
-        if parent_display.is_empty() {
-            format!("{}.md", state.filename)
-        } else {
-            format!("{}/{}.md", parent_text, state.filename)
-        }
-    };
-
     let text = vec![
         Line::from(vec![
             Span::styled("Location: ", Style::default().fg(Color::DarkGray)),
@@ -278,7 +267,7 @@ fn render_create_dialog(frame: &mut Frame, state: &CreateNoteState) {
             ),
         ]),
         Line::from(vec![Span::styled(
-            "Tip: Use '/' to create subdirectories",
+            "Tip: path/ = directory, path/name = note",
             Style::default()
                 .fg(Color::DarkGray)
                 .add_modifier(Modifier::ITALIC),
@@ -290,38 +279,78 @@ fn render_create_dialog(frame: &mut Frame, state: &CreateNoteState) {
 }
 
 fn render_delete_dialog(frame: &mut Frame, state: &DeleteConfirmState) {
-    let area = centered_fixed_rect(45, 5, frame.area());
+    let has_warning = state.is_dir && state.note_count > 0;
+    let height = if has_warning { 7 } else if state.is_dir { 6 } else { 5 };
+    let area = centered_fixed_rect(45, height, frame.area());
     frame.render_widget(Clear, area);
 
+    let title = if state.is_dir {
+        " Delete Directory "
+    } else {
+        " Delete Note "
+    };
+
     let block = Block::default()
-        .title(" Delete Note ")
+        .title(title)
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Red));
 
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
-    let text = vec![
+    let mut text = vec![
         Line::from(vec![
-            Span::raw("Delete "),
+            Span::raw(if state.is_dir {
+                "Delete directory "
+            } else {
+                "Delete "
+            }),
             Span::styled(&state.name, Style::default().fg(Color::Yellow)),
             Span::raw("?"),
         ]),
-        Line::from(vec![
-            Span::styled(
-                "y",
-                Style::default()
-                    .fg(Color::Green)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::raw(" = yes    "),
-            Span::styled(
-                "n/Esc",
-                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-            ),
-            Span::raw(" = cancel"),
-        ]),
     ];
+
+    if has_warning {
+        let warning = format!(
+            "Contains {} note{}!",
+            state.note_count,
+            if state.note_count == 1 { "" } else { "s" }
+        );
+        text.push(Line::from(Span::styled(
+            warning,
+            Style::default()
+                .fg(Color::Red)
+                .add_modifier(Modifier::BOLD),
+        )));
+        text.push(Line::from(Span::styled(
+            "This will delete all notes inside.",
+            Style::default()
+                .fg(Color::DarkGray)
+                .add_modifier(Modifier::ITALIC),
+        )));
+    } else if state.is_dir {
+        text.push(Line::from(Span::styled(
+            "(empty directory)",
+            Style::default()
+                .fg(Color::DarkGray)
+                .add_modifier(Modifier::ITALIC),
+        )));
+    }
+
+    text.push(Line::from(vec![
+        Span::styled(
+            "y",
+            Style::default()
+                .fg(Color::Green)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::raw(" = yes    "),
+        Span::styled(
+            "n/Esc",
+            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+        ),
+        Span::raw(" = cancel"),
+    ]));
 
     let paragraph = Paragraph::new(text);
     frame.render_widget(paragraph, inner);

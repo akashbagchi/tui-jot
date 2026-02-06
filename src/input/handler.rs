@@ -221,8 +221,15 @@ impl InputHandler {
             KeyCode::Char('G') => {
                 app.browser_state.move_to_bottom(app.filtered_visible_entries().len());
             }
+            KeyCode::Char('A') => {
+                // Create new note/directory in vault root
+                app.create_note_state = Some(CreateNoteState {
+                    filename: String::new(),
+                    parent_dir: PathBuf::new(),
+                });
+            }
             KeyCode::Char('a') => {
-                // Create new note - determine parent directory
+                // Create new note - determine parent directory from selection
                 let parent_dir = {
                     let entries = app.filtered_visible_entries();
                     if let Some(entry) = app.browser_state.selected_entry(&entries) {
@@ -247,15 +254,19 @@ impl InputHandler {
                 app.tag_filter_state = Some(TagFilterState::new(tags));
             }
             KeyCode::Char('d') => {
-                // Delete note - only for files, not directories
+                // Delete note or directory
                 let delete_info = {
                     let entries = app.filtered_visible_entries();
                     app.browser_state.selected_entry(&entries)
-                        .filter(|e| !e.is_dir)
-                        .map(|e| (e.path.clone(), e.name.clone()))
+                        .map(|e| (e.path.clone(), e.name.clone(), e.is_dir))
                 };
-                if let Some((path, name)) = delete_info {
-                    app.delete_confirm_state = Some(DeleteConfirmState { path, name });
+                if let Some((path, name, is_dir)) = delete_info {
+                    let note_count = if is_dir {
+                        app.vault.notes.keys().filter(|p| p.starts_with(&path)).count()
+                    } else {
+                        0
+                    };
+                    app.delete_confirm_state = Some(DeleteConfirmState { path, name, is_dir, note_count });
                 }
             }
             _ => {}
@@ -475,7 +486,7 @@ impl InputHandler {
         match key.code {
             KeyCode::Char('y') | KeyCode::Char('Y') => {
                 if let Some(state) = app.delete_confirm_state.take() {
-                    Self::delete_note(app, &state.path)?;
+                    Self::delete_entry(app, &state.path, state.is_dir)?;
                 }
             }
             KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
@@ -645,6 +656,26 @@ impl InputHandler {
     }
 
     fn create_note(app: &mut App, parent_dir: &std::path::Path, filename: &str) -> Result<()> {
+        // If filename ends with '/', create a standalone directory
+        if filename.ends_with('/') {
+            let dir_name = filename.trim_end_matches('/');
+            let relative_path = parent_dir.join(dir_name);
+            let full_path = app.vault.root.join(&relative_path);
+            std::fs::create_dir_all(&full_path)?;
+            app.refresh_vault()?;
+
+            // Select the newly created directory
+            if let Some(index) = app
+                .vault
+                .visible_entries()
+                .iter()
+                .position(|e| e.path == relative_path)
+            {
+                app.browser_state.select(index);
+            }
+            return Ok(());
+        }
+
         // Build the relative path
         let relative_path = parent_dir.join(format!("{}.md", filename));
         let full_path = app.vault.root.join(&relative_path);
@@ -684,11 +715,15 @@ impl InputHandler {
         Ok(())
     }
 
-    fn delete_note(app: &mut App, path: &PathBuf) -> Result<()> {
+    fn delete_entry(app: &mut App, path: &PathBuf, is_dir: bool) -> Result<()> {
         let full_path = app.vault.root.join(path);
 
-        // Delete the file
-        std::fs::remove_file(&full_path)?;
+        // Delete the file or directory (including contents)
+        if is_dir {
+            std::fs::remove_dir_all(&full_path)?;
+        } else {
+            std::fs::remove_file(&full_path)?;
+        }
 
         // Get current selection before refresh
         let current_idx = app.browser_state.selected;
