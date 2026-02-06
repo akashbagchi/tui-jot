@@ -214,7 +214,7 @@ fn centered_fixed_rect(width: u16, height: u16, r: Rect) -> Rect {
 }
 
 fn render_create_dialog(frame: &mut Frame, state: &CreateNoteState) {
-    let area = centered_fixed_rect(40, 5, frame.area());
+    let area = centered_fixed_rect(50, 6, frame.area());
     frame.render_widget(Clear, area);
 
     let block = Block::default()
@@ -233,6 +233,17 @@ fn render_create_dialog(frame: &mut Frame, state: &CreateNoteState) {
         &parent_display
     };
 
+    // Build the full path preview
+    let full_path = if state.filename.is_empty() {
+        parent_text.to_string()
+    } else {
+        if parent_display.is_empty() {
+            format!("{}.md", state.filename)
+        } else {
+            format!("{}/{}.md", parent_text, state.filename)
+        }
+    };
+
     let text = vec![
         Line::from(vec![
             Span::styled("Location: ", Style::default().fg(Color::DarkGray)),
@@ -248,6 +259,12 @@ fn render_create_dialog(frame: &mut Frame, state: &CreateNoteState) {
                     .add_modifier(Modifier::SLOW_BLINK),
             ),
         ]),
+        Line::from(vec![Span::styled(
+            "Tip: Use '/' to create subdirectories",
+            Style::default()
+                .fg(Color::DarkGray)
+                .add_modifier(Modifier::ITALIC),
+        )]),
     ];
 
     let paragraph = Paragraph::new(text);

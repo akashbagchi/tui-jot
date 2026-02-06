@@ -20,12 +20,17 @@ impl InputHandler {
         };
 
         // Find the note by case-insensitive name match (handles subdirectories too)
-        let found_path = app.vault.notes.keys().find(|path| {
-            path.file_stem()
-                .and_then(|s| s.to_str())
-                .map(|name| name.eq_ignore_ascii_case(target_name))
-                .unwrap_or(false)
-        }).cloned();
+        let found_path = app
+            .vault
+            .notes
+            .keys()
+            .find(|path| {
+                path.file_stem()
+                    .and_then(|s| s.to_str())
+                    .map(|name| name.eq_ignore_ascii_case(target_name))
+                    .unwrap_or(false)
+            })
+            .cloned();
 
         if let Some(target_path) = found_path {
             if let Some(index) = app
@@ -408,8 +413,8 @@ impl InputHandler {
                 }
             }
             KeyCode::Char(c) => {
-                // Only allow valid filename characters
-                if c.is_alphanumeric() || c == '-' || c == '_' || c == ' ' {
+                // Allow valid filename characters including '/' for directories
+                if c.is_alphanumeric() || c == '-' || c == '_' || c == ' ' || c == '/' {
                     if let Some(ref mut state) = app.create_note_state {
                         state.filename.push(c);
                     }
@@ -440,8 +445,19 @@ impl InputHandler {
         let relative_path = parent_dir.join(format!("{}.md", filename));
         let full_path = app.vault.root.join(&relative_path);
 
+        // Create parent directories if they don't exist
+        if let Some(parent) = full_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+
         // Create the file with a basic header
-        let title = filename.replace(['-', '_'], " ");
+        // Extract just the filename (not the path) for the title
+        let title = relative_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or(filename)
+            .replace(['-', '_'], " ");
+
         let content = format!("# {}\n\n", title);
         std::fs::write(&full_path, content)?;
 
