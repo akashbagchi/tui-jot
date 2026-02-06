@@ -218,12 +218,18 @@ impl ViewerState {
         self.cursor.col = self.current_line_len();
     }
 
+    fn line_content_len(line: ropey::RopeSlice) -> usize {
+        let len = line.len_chars();
+        if len > 0 && line.char(len - 1) == '\n' {
+            len - 1
+        } else {
+            len
+        }
+    }
+
     fn current_line_len(&self) -> usize {
         if self.cursor.line < self.content.len_lines() {
-            self.content
-                .line(self.cursor.line)
-                .len_chars()
-                .saturating_sub(1)
+            Self::line_content_len(self.content.line(self.cursor.line))
         } else {
             0
         }
@@ -234,7 +240,7 @@ impl ViewerState {
             return self.content.len_chars();
         }
         let line_start = self.content.line_to_char(line);
-        let line_len = self.content.line(line).len_chars().saturating_sub(1);
+        let line_len = Self::line_content_len(self.content.line(line));
         line_start + col.min(line_len)
     }
 

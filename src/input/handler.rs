@@ -6,6 +6,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{Terminal, backend::CrosstermBackend};
 
 use crate::app::{App, CreateNoteState, DeleteConfirmState};
+use crate::core::Index;
 use crate::ui::{EditorMode, FinderState, Focus, SearchState, TagFilterState};
 
 pub struct InputHandler;
@@ -344,8 +345,9 @@ impl InputHandler {
                 if let Some(path) = app.viewer_state.current_note_path.clone() {
                     let full_path = app.vault.root.join(&path);
                     let _ = std::fs::write(&full_path, &content);
-                    // Reload the note
+                    // Reload the note and rebuild index
                     app.vault.reload_note(&path);
+                    app.index = Index::build(&app.vault);
                     if let Some(note) = app.vault.get_note(&path) {
                         app.viewer_state.update_links(note);
                     }
