@@ -1,7 +1,7 @@
 use ratatui::{
     Frame,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::Style,
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, ListState},
 };
@@ -9,6 +9,7 @@ use ratatui::{
 use crate::app::App;
 use crate::core::{TreeEntry, Vault};
 use crate::ui::layout::Focus;
+use crate::ui::theme;
 
 pub struct BrowserState {
     pub selected: usize,
@@ -61,16 +62,11 @@ impl BrowserState {
 }
 
 pub fn render(frame: &mut Frame, area: Rect, app: &App) {
+    let t = &app.theme;
     let is_focused = app.focus == Focus::Browser;
 
-    let border_style = if is_focused {
-        Style::default().fg(Color::Cyan)
-    } else {
-        Style::default().fg(Color::DarkGray)
-    };
-
     let title = if let Some(ref tag) = app.active_tag_filter {
-        format!(" Notes [#{}] ", tag)
+        format!(" Notes [{}#{}] ", theme::ICON_TAG, tag)
     } else {
         " Notes ".to_string()
     };
@@ -78,7 +74,8 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     let block = Block::default()
         .title(title)
         .borders(Borders::ALL)
-        .border_style(border_style);
+        .border_type(theme::border_type())
+        .border_style(t.border_style(is_focused));
 
     let visible = app.filtered_visible_entries();
 
@@ -88,9 +85,13 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
         .map(|(i, entry)| {
             let indent = "  ".repeat(entry.depth);
             let icon = if entry.is_dir {
-                if entry.expanded { "▼ " } else { "▶ " }
+                if entry.expanded {
+                    theme::ICON_FOLDER_OPEN
+                } else {
+                    theme::ICON_FOLDER_CLOSED
+                }
             } else {
-                "  "
+                theme::ICON_FILE
             };
 
             let name = if entry.is_dir {
@@ -101,13 +102,11 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             };
 
             let style = if i == app.browser_state.selected {
-                Style::default()
-                    .fg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD)
+                t.selection_style()
             } else if entry.is_dir {
-                Style::default().fg(Color::Yellow)
+                Style::default().fg(t.dir_fg)
             } else {
-                Style::default()
+                Style::default().fg(t.file_fg)
             };
 
             let line = Line::from(vec![
@@ -122,7 +121,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
 
     let list = List::new(items)
         .block(block)
-        .highlight_style(Style::default().bg(Color::DarkGray));
+        .highlight_style(t.selection_style());
 
     let mut state = app.browser_state.list_state.clone();
     frame.render_stateful_widget(list, area, &mut state);

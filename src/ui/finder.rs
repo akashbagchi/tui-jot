@@ -3,12 +3,13 @@ use std::path::PathBuf;
 use ratatui::{
     Frame,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph},
 };
 
 use crate::core::{self, Vault};
+use crate::ui::theme::{self, Theme};
 
 pub struct FinderState {
     pub query: String,
@@ -84,7 +85,7 @@ impl FinderState {
     }
 }
 
-pub fn render(frame: &mut Frame, area: Rect, state: &FinderState) {
+pub fn render(frame: &mut Frame, area: Rect, state: &FinderState, t: &Theme) {
     let popup_width = 50u16.min(area.width.saturating_sub(4));
     let popup_height = 16u16.min(area.height.saturating_sub(4));
 
@@ -95,9 +96,11 @@ pub fn render(frame: &mut Frame, area: Rect, state: &FinderState) {
     frame.render_widget(Clear, popup_area);
 
     let block = Block::default()
-        .title(" Find Note ")
+        .title(format!(" {}Find Note ", theme::ICON_SEARCH))
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Magenta));
+        .border_type(theme::border_type())
+        .border_style(Style::default().fg(t.finder_prompt))
+        .style(Style::default().bg(t.bg0));
 
     let inner = block.inner(popup_area);
     frame.render_widget(block, popup_area);
@@ -109,12 +112,12 @@ pub fn render(frame: &mut Frame, area: Rect, state: &FinderState) {
     // Input field
     let input_area = Rect::new(inner.x, inner.y, inner.width, 1);
     let input = Paragraph::new(Line::from(vec![
-        Span::styled(" > ", Style::default().fg(Color::Magenta)),
-        Span::raw(&state.query),
+        Span::styled(" > ", Style::default().fg(t.finder_prompt)),
+        Span::styled(&state.query, Style::default().fg(t.fg1)),
         Span::styled(
             "_",
             Style::default()
-                .fg(Color::Cyan)
+                .fg(t.cursor_blink)
                 .add_modifier(Modifier::SLOW_BLINK),
         ),
     ]));
@@ -124,7 +127,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &FinderState) {
     let sep_area = Rect::new(inner.x, inner.y + 1, inner.width, 1);
     let sep = Paragraph::new(Line::from(Span::styled(
         "─".repeat(inner.width as usize),
-        Style::default().fg(Color::DarkGray),
+        Style::default().fg(t.bg3),
     )));
     frame.render_widget(sep, sep_area);
 
@@ -134,7 +137,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &FinderState) {
     if state.results.is_empty() {
         let empty = Paragraph::new(Line::from(Span::styled(
             "No matching notes",
-            Style::default().fg(Color::DarkGray),
+            Style::default().fg(t.empty_hint),
         )));
         frame.render_widget(empty, results_area);
     } else {
@@ -144,20 +147,28 @@ pub fn render(frame: &mut Frame, area: Rect, state: &FinderState) {
             .enumerate()
             .map(|(i, (_path, title))| {
                 let style = if i == state.selected {
-                    Style::default()
-                        .fg(Color::Cyan)
-                        .add_modifier(Modifier::BOLD)
+                    t.selection_style()
                 } else {
-                    Style::default()
+                    Style::default().fg(t.fg1)
                 };
 
-                ListItem::new(Line::from(Span::styled(format!("  {}", title), style)))
+                ListItem::new(Line::from(vec![
+                    Span::styled(
+                        format!("  {} ", theme::ICON_FILE),
+                        if i == state.selected {
+                            style
+                        } else {
+                            Style::default().fg(t.fg4)
+                        },
+                    ),
+                    Span::styled(title, style),
+                ]))
             })
             .collect();
 
         let list = List::new(items).highlight_style(
             Style::default()
-                .bg(Color::DarkGray)
+                .bg(t.selected_bg)
                 .add_modifier(Modifier::BOLD),
         );
 

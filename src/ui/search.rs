@@ -3,12 +3,13 @@ use std::path::PathBuf;
 use ratatui::{
     Frame,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph},
 };
 
 use crate::core::Vault;
+use crate::ui::theme::{self, Theme};
 
 pub struct SearchState {
     pub query: String,
@@ -89,7 +90,7 @@ impl SearchState {
     }
 }
 
-pub fn render(frame: &mut Frame, area: Rect, state: &SearchState) {
+pub fn render(frame: &mut Frame, area: Rect, state: &SearchState, t: &Theme) {
     let popup_width = 70u16.min(area.width.saturating_sub(4));
     let popup_height = 20u16.min(area.height.saturating_sub(4));
 
@@ -100,9 +101,11 @@ pub fn render(frame: &mut Frame, area: Rect, state: &SearchState) {
     frame.render_widget(Clear, popup_area);
 
     let block = Block::default()
-        .title(" Search ")
+        .title(format!(" {}Search ", theme::ICON_SEARCH))
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Green));
+        .border_type(theme::border_type())
+        .border_style(Style::default().fg(t.search_prompt))
+        .style(Style::default().bg(t.bg0));
 
     let inner = block.inner(popup_area);
     frame.render_widget(block, popup_area);
@@ -114,12 +117,15 @@ pub fn render(frame: &mut Frame, area: Rect, state: &SearchState) {
     // Input field
     let input_area = Rect::new(inner.x, inner.y, inner.width, 1);
     let input = Paragraph::new(Line::from(vec![
-        Span::styled(" / ", Style::default().fg(Color::Green)),
-        Span::raw(&state.query),
+        Span::styled(
+            format!(" {} ", theme::ICON_SEARCH),
+            Style::default().fg(t.search_prompt),
+        ),
+        Span::styled(&state.query, Style::default().fg(t.fg1)),
         Span::styled(
             "_",
             Style::default()
-                .fg(Color::Cyan)
+                .fg(t.cursor_blink)
                 .add_modifier(Modifier::SLOW_BLINK),
         ),
     ]));
@@ -129,7 +135,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &SearchState) {
     let sep_area = Rect::new(inner.x, inner.y + 1, inner.width, 1);
     let sep = Paragraph::new(Line::from(Span::styled(
         "─".repeat(inner.width as usize),
-        Style::default().fg(Color::DarkGray),
+        Style::default().fg(t.bg3),
     )));
     frame.render_widget(sep, sep_area);
 
@@ -144,7 +150,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &SearchState) {
         };
         let empty = Paragraph::new(Line::from(Span::styled(
             msg,
-            Style::default().fg(Color::DarkGray),
+            Style::default().fg(t.empty_hint),
         )));
         frame.render_widget(empty, results_area);
     } else {
@@ -154,11 +160,9 @@ pub fn render(frame: &mut Frame, area: Rect, state: &SearchState) {
             .enumerate()
             .map(|(i, result)| {
                 let style = if i == state.selected {
-                    Style::default()
-                        .fg(Color::Cyan)
-                        .add_modifier(Modifier::BOLD)
+                    t.selection_style()
                 } else {
-                    Style::default()
+                    Style::default().fg(t.fg1)
                 };
 
                 // Truncate matched line if too long
@@ -174,12 +178,12 @@ pub fn render(frame: &mut Frame, area: Rect, state: &SearchState) {
                         Span::styled(&result.title, style),
                         Span::styled(
                             format!(":{}", result.line_number),
-                            Style::default().fg(Color::DarkGray),
+                            Style::default().fg(t.fg4),
                         ),
                     ]),
                     Line::from(Span::styled(
                         format!("  {}", matched),
-                        Style::default().fg(Color::DarkGray),
+                        Style::default().fg(t.fg3),
                     )),
                 ])
             })
@@ -187,7 +191,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &SearchState) {
 
         let list = List::new(items).highlight_style(
             Style::default()
-                .bg(Color::DarkGray)
+                .bg(t.selected_bg)
                 .add_modifier(Modifier::BOLD),
         );
 

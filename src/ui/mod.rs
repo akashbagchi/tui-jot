@@ -4,6 +4,7 @@ mod finder;
 mod layout;
 mod search;
 mod tag_filter;
+pub mod theme;
 mod viewer;
 mod viewer_state;
 

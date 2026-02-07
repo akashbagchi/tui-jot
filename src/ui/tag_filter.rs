@@ -1,10 +1,12 @@
 use ratatui::{
     Frame,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, List, ListItem, ListState},
 };
+
+use crate::ui::theme::{self, Theme};
 
 pub struct TagFilterState {
     pub tags: Vec<String>,
@@ -50,7 +52,7 @@ impl TagFilterState {
     }
 }
 
-pub fn render(frame: &mut Frame, area: Rect, state: &TagFilterState) {
+pub fn render(frame: &mut Frame, area: Rect, state: &TagFilterState, t: &Theme) {
     let popup_width = 40u16.min(area.width.saturating_sub(4));
     let popup_height = (state.tags.len() as u16 + 4).min(area.height.saturating_sub(4));
 
@@ -61,29 +63,29 @@ pub fn render(frame: &mut Frame, area: Rect, state: &TagFilterState) {
     frame.render_widget(Clear, popup_area);
 
     let block = Block::default()
-        .title(" Filter by Tag ")
+        .title(format!(" {}Filter by Tag ", theme::ICON_TAG))
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Yellow));
+        .border_type(theme::border_type())
+        .border_style(Style::default().fg(t.tag_filter_border))
+        .style(Style::default().bg(t.bg0));
 
     let mut items: Vec<ListItem> = vec![ListItem::new(Line::from(Span::styled(
         "  (clear filter)",
         Style::default()
-            .fg(Color::DarkGray)
+            .fg(t.fg4)
             .add_modifier(Modifier::ITALIC),
     )))];
 
     for tag in &state.tags {
         items.push(ListItem::new(Line::from(vec![
-            Span::raw("  #"),
-            Span::styled(tag, Style::default().fg(Color::Yellow)),
+            Span::styled(format!("  {}", theme::ICON_TAG), Style::default().fg(t.fg4)),
+            Span::styled(tag, Style::default().fg(t.tag_fg)),
         ])));
     }
 
-    let list = List::new(items).block(block).highlight_style(
-        Style::default()
-            .fg(Color::Cyan)
-            .add_modifier(Modifier::BOLD),
-    );
+    let list = List::new(items)
+        .block(block)
+        .highlight_style(t.selection_style());
 
     let mut list_state = state.list_state.clone();
     frame.render_stateful_widget(list, popup_area, &mut list_state);

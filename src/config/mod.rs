@@ -1,3 +1,3 @@
 mod settings;
 
-pub use settings::Config;
+pub use settings::{Config, UiConfig};

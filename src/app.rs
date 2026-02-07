@@ -14,6 +14,7 @@ use crate::config::Config;
 use crate::core::{Index, Vault};
 use crate::input::InputHandler;
 use crate::ui::{self, Focus};
+use crate::ui::theme::Theme;
 
 /// State for the create note dialog
 pub struct CreateNoteState {
@@ -31,6 +32,7 @@ pub struct DeleteConfirmState {
 
 pub struct App {
     pub config: Config,
+    pub theme: Theme,
     pub vault: Vault,
     pub index: Index,
     pub focus: Focus,
@@ -53,9 +55,11 @@ impl App {
         let vault = Vault::open(&config.vault.path)?;
         let index = Index::build(&vault);
         let browser_state = ui::BrowserState::new(&vault);
+        let theme = Theme::from_config(&config.ui);
 
         Ok(Self {
             config,
+            theme,
             vault,
             index,
             focus: Focus::Browser,

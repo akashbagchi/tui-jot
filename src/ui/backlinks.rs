@@ -3,13 +3,14 @@ use std::path::PathBuf;
 use ratatui::{
     Frame,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, ListState},
 };
 
 use crate::app::App;
 use crate::ui::layout::Focus;
+use crate::ui::theme;
 
 pub struct BacklinksState {
     pub selected: usize,
@@ -52,13 +53,8 @@ impl BacklinksState {
 }
 
 pub fn render(frame: &mut Frame, area: Rect, app: &App) {
+    let t = &app.theme;
     let is_focused = app.focus == Focus::Backlinks;
-
-    let border_style = if is_focused {
-        Style::default().fg(Color::Cyan)
-    } else {
-        Style::default().fg(Color::DarkGray)
-    };
 
     let backlink_paths = if let Some(note) = app.selected_note() {
         app.index.get_backlinks(&note.path)
@@ -66,16 +62,17 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
         Vec::new()
     };
 
-    let title = format!(" Backlinks ({}) ", backlink_paths.len());
+    let title = format!(" {}Backlinks ({}) ", theme::ICON_LINK, backlink_paths.len());
     let block = Block::default()
         .title(title)
         .borders(Borders::ALL)
-        .border_style(border_style);
+        .border_type(theme::border_type())
+        .border_style(t.border_style(is_focused));
 
     let items: Vec<ListItem> = if backlink_paths.is_empty() {
         vec![ListItem::new(Line::from(Span::styled(
             "   No backlinks",
-            Style::default().fg(Color::DarkGray),
+            Style::default().fg(t.empty_hint),
         )))]
     } else {
         backlink_paths
@@ -88,15 +85,16 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
                     .unwrap_or("Unknown");
 
                 let style = if is_focused && i == app.backlinks_state.selected {
-                    Style::default()
-                        .fg(Color::Cyan)
-                        .add_modifier(Modifier::BOLD)
+                    t.selection_style()
                 } else {
-                    Style::default().fg(Color::Yellow)
+                    Style::default().fg(t.backlink_fg)
                 };
 
                 ListItem::new(Line::from(vec![
-                    Span::raw("  <- "),
+                    Span::styled(
+                        format!("  {} ", theme::ICON_LINK),
+                        Style::default().fg(t.bg4),
+                    ),
                     Span::styled(name, style),
                 ]))
             })
@@ -105,7 +103,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
 
     let list = List::new(items).block(block).highlight_style(
         Style::default()
-            .bg(Color::DarkGray)
+            .bg(t.selected_bg)
             .add_modifier(Modifier::BOLD),
     );
 

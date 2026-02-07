@@ -1,7 +1,7 @@
 use ratatui::{
     Frame,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     text::{Line, Span, Text},
     widgets::{Block, Borders, Paragraph, Wrap},
 };
@@ -10,23 +10,19 @@ use super::viewer_state::{AutocompleteState, EditorMode, ViewerState};
 use crate::app::App;
 use crate::core::Note;
 use crate::ui::layout::Focus;
+use crate::ui::theme::{self, Theme};
 
 pub fn render(frame: &mut Frame, area: Rect, app: &App) {
+    let t = &app.theme;
     let is_focused = app.focus == Focus::Viewer;
 
-    let border_style = if is_focused {
-        Style::default().fg(Color::Cyan)
-    } else {
-        Style::default().fg(Color::DarkGray)
-    };
-
     let mode_indicator = match app.viewer_state.mode {
-        EditorMode::Read => " Preview ",
+        EditorMode::Read => " Preview ".to_string(),
         EditorMode::Edit => {
             if app.viewer_state.dirty {
-                " EDIT [modified] "
+                format!(" {}EDIT [modified] ", theme::ICON_EDIT)
             } else {
-                " EDIT "
+                format!(" {}EDIT ", theme::ICON_EDIT)
             }
         }
     };
@@ -34,11 +30,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     let block = Block::default()
         .title(mode_indicator)
         .borders(Borders::ALL)
-        .border_style(border_style);
+        .border_type(theme::border_type())
+        .border_style(t.border_style(is_focused));
 
     let content = if let Some(note) = app.selected_note() {
         match app.viewer_state.mode {
-            EditorMode::Read => render_markdown(note, &app.viewer_state, &app.vault),
+            EditorMode::Read => render_markdown(note, &app.viewer_state, &app.vault, t),
             EditorMode::Edit => render_edit_mode(&app.viewer_state),
         }
     } else {
@@ -46,7 +43,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             Line::from(""),
             Line::from(Span::styled(
                 "  Select a note to preview",
-                Style::default().fg(Color::DarkGray),
+                Style::default().fg(t.empty_hint),
             )),
         ])
     };
@@ -62,7 +59,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     if app.viewer_state.mode == EditorMode::Edit {
         if let Some(ref ac) = app.viewer_state.autocomplete {
             if !ac.matches.is_empty() {
-                render_autocomplete(frame, area, ac, &app.viewer_state);
+                render_autocomplete(frame, area, ac, &app.viewer_state, t);
             }
         }
     }
@@ -102,6 +99,7 @@ fn render_autocomplete(
     area: Rect,
     ac: &AutocompleteState,
     viewer_state: &ViewerState,
+    t: &Theme,
 ) {
     use ratatui::widgets::{List, ListItem};
 
@@ -138,11 +136,11 @@ fn render_autocomplete(
         .map(|(i, (_, name)): (usize, &(std::path::PathBuf, String))| {
             let style = if i == ac.selected {
                 Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::Cyan)
+                    .fg(t.selected_fg)
+                    .bg(t.autocomplete_sel_bg)
                     .add_modifier(Modifier::BOLD)
             } else {
-                Style::default().fg(Color::White)
+                Style::default().fg(t.fg1)
             };
 
             let display = if name.len() > popup_width as usize - 4 {
@@ -158,9 +156,10 @@ fn render_autocomplete(
     let list = List::new(items).block(
         Block::default()
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Yellow))
+            .border_type(theme::border_type())
+            .border_style(Style::default().fg(t.border_overlay))
             .title(format!(" Notes ({}) ", ac.matches.len()))
-            .style(Style::default().bg(Color::Black)),
+            .style(Style::default().bg(t.autocomplete_bg)),
     );
 
     frame.render_widget(list, popup_area);
@@ -170,11 +169,12 @@ fn render_markdown(
     note: &Note,
     viewer_state: &ViewerState,
     vault: &crate::core::Vault,
+    t: &Theme,
 ) -> Text<'static> {
     let mut lines: Vec<Line<'static>> = Vec::new();
 
     for (line_idx, line) in note.content.lines().enumerate() {
-        lines.push(render_line(line, note, viewer_state, line_idx, vault));
+        lines.push(render_line(line, note, viewer_state, line_idx, vault, t));
     }
 
     Text::from(lines)
@@ -186,6 +186,7 @@ fn render_line(
     viewer_state: &ViewerState,
     line_idx: usize,
     vault: &crate::core::Vault,
+    t: &Theme,
 ) -> Line<'static> {
     let trimmed = line.trim();
 
@@ -194,7 +195,7 @@ fn render_line(
         return Line::from(Span::styled(
             line.to_string(),
             Style::default()
-                .fg(Color::Magenta)
+                .fg(t.heading_1)
                 .add_modifier(Modifier::BOLD),
         ));
     }
@@ -202,7 +203,7 @@ fn render_line(
         return Line::from(Span::styled(
             line.to_string(),
             Style::default()
-                .fg(Color::Blue)
+                .fg(t.heading_2)
                 .add_modifier(Modifier::BOLD),
         ));
     }
@@ -210,7 +211,7 @@ fn render_line(
         return Line::from(Span::styled(
             line.to_string(),
             Style::default()
-                .fg(Color::Cyan)
+                .fg(t.heading_3)
                 .add_modifier(Modifier::BOLD),
         ));
     }
@@ -219,12 +220,12 @@ fn render_line(
     if trimmed.starts_with("```") {
         return Line::from(Span::styled(
             line.to_string(),
-            Style::default().fg(Color::DarkGray),
+            Style::default().fg(t.fg4),
         ));
     }
 
     // Parse inline elements (tags, links, bold, etc.)
-    render_inline(line, note, viewer_state, line_idx, vault)
+    render_inline(line, note, viewer_state, line_idx, vault, t)
 }
 
 fn render_inline(
@@ -233,6 +234,7 @@ fn render_inline(
     viewer_state: &ViewerState,
     line_idx: usize,
     vault: &crate::core::Vault,
+    t: &Theme,
 ) -> Line<'static> {
     let mut spans: Vec<Span<'static>> = Vec::new();
     let mut current = String::new();
@@ -295,22 +297,22 @@ fn render_inline(
                 let style = if is_broken {
                     if is_selected {
                         Style::default()
-                            .fg(Color::Red)
-                            .bg(Color::DarkGray)
+                            .fg(t.link_broken)
+                            .bg(t.link_selected_bg)
                             .add_modifier(Modifier::BOLD | Modifier::CROSSED_OUT)
                     } else {
                         Style::default()
-                            .fg(Color::Red)
+                            .fg(t.link_broken)
                             .add_modifier(Modifier::CROSSED_OUT)
                     }
                 } else if is_selected {
                     Style::default()
-                        .fg(Color::Green)
-                        .bg(Color::DarkGray)
+                        .fg(t.link_selected_fg)
+                        .bg(t.link_selected_bg)
                         .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
                 } else {
                     Style::default()
-                        .fg(Color::Green)
+                        .fg(t.link_fg)
                         .add_modifier(Modifier::UNDERLINED)
                 };
 
@@ -350,7 +352,7 @@ fn render_inline(
                 spans.push(Span::styled(
                     tag,
                     Style::default()
-                        .fg(Color::Yellow)
+                        .fg(t.tag_fg)
                         .add_modifier(Modifier::ITALIC),
                 ));
                 continue;
@@ -404,7 +406,7 @@ fn render_inline(
                 i += 1;
                 spans.push(Span::styled(
                     format!("`{}`", code_text),
-                    Style::default().fg(Color::Red),
+                    Style::default().fg(t.inline_code),
                 ));
             } else {
                 current.push('`');

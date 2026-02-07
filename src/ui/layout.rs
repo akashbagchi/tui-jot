@@ -1,13 +1,14 @@
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph},
 };
 
 use crate::app::{App, CreateNoteState, DeleteConfirmState};
 
+use super::theme;
 use super::{backlinks, browser, finder, search, tag_filter, viewer};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -28,6 +29,7 @@ impl Focus {
 }
 
 pub fn render(frame: &mut Frame, app: &App) {
+    let t = &app.theme;
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -42,46 +44,51 @@ pub fn render(frame: &mut Frame, app: &App) {
     render_status_bar(frame, chunks[2], app);
 
     if app.show_help {
-        render_help(frame);
+        render_help(frame, app);
     }
 
     if let Some(state) = &app.create_note_state {
-        render_create_dialog(frame, state);
+        render_create_dialog(frame, state, app);
     }
 
     if let Some(state) = &app.delete_confirm_state {
-        render_delete_dialog(frame, state);
+        render_delete_dialog(frame, state, app);
     }
 
     if let Some(state) = &app.tag_filter_state {
-        tag_filter::render(frame, frame.area(), state);
+        tag_filter::render(frame, frame.area(), state, t);
     }
 
     if let Some(state) = &app.search_state {
-        search::render(frame, frame.area(), state);
+        search::render(frame, frame.area(), state, t);
     }
 
     if let Some(state) = &app.finder_state {
-        finder::render(frame, frame.area(), state);
+        finder::render(frame, frame.area(), state, t);
     }
 }
 
 fn render_title_bar(frame: &mut Frame, area: Rect, app: &App) {
+    let t = &app.theme;
     let title = Line::from(vec![
         Span::styled(
-            " tui-jot ",
+            format!(" {}", theme::ICON_APP),
+            Style::default().fg(t.title_fg),
+        ),
+        Span::styled(
+            "tui-jot ",
             Style::default()
-                .fg(Color::Cyan)
+                .fg(t.title_fg)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::raw("│ "),
+        Span::styled("│ ", Style::default().fg(t.bg3)),
         Span::styled(
             app.vault.root.display().to_string(),
-            Style::default().fg(Color::DarkGray),
+            Style::default().fg(t.fg4),
         ),
     ]);
 
-    let title_bar = Paragraph::new(title).style(Style::default().bg(Color::Black));
+    let title_bar = Paragraph::new(title).style(Style::default().bg(t.title_bar_bg));
 
     frame.render_widget(title_bar, area);
 }
@@ -110,6 +117,7 @@ fn render_backlinks(frame: &mut Frame, area: Rect, app: &App) {
 }
 
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
+    let t = &app.theme;
     let help_text = match app.focus {
         Focus::Browser => "j/k: navigate  Enter: open  a: new  d: delete  t: tags  /: search  Ctrl+q: quit",
         Focus::Viewer => "j/k: scroll  h/Esc: back  i: edit  /: search  Ctrl+p: find  Ctrl+q: quit",
@@ -129,17 +137,18 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
         .unwrap_or_default();
 
     let status = Line::from(vec![
-        Span::styled(help_text, Style::default().fg(Color::DarkGray)),
+        Span::styled(help_text, Style::default().fg(t.fg4)),
         Span::raw("  "),
-        Span::styled(note_info, Style::default().fg(Color::Cyan)),
+        Span::styled(note_info, Style::default().fg(t.aqua)),
     ]);
 
-    let status_bar = Paragraph::new(status).style(Style::default().bg(Color::Black));
+    let status_bar = Paragraph::new(status).style(Style::default().bg(t.status_bar_bg));
 
     frame.render_widget(status_bar, area);
 }
 
-fn render_help(frame: &mut Frame) {
+fn render_help(frame: &mut Frame, app: &App) {
+    let t = &app.theme;
     let keybindings = vec![
         (
             "Navigation",
@@ -193,7 +202,8 @@ fn render_help(frame: &mut Frame) {
     let block = Block::default()
         .title(" Keybindings ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Cyan));
+        .border_type(theme::border_type())
+        .border_style(Style::default().fg(t.border_overlay));
 
     let mut text = Vec::new();
     for (i, (section, items)) in keybindings.iter().enumerate() {
@@ -203,20 +213,20 @@ fn render_help(frame: &mut Frame) {
         text.push(Line::from(Span::styled(
             *section,
             Style::default()
-                .fg(Color::Cyan)
+                .fg(t.aqua)
                 .add_modifier(Modifier::BOLD),
         )));
         for (key, action) in items {
             text.push(Line::from(vec![
-                Span::styled(format!("  {:<14}", key), Style::default().fg(Color::Yellow)),
-                Span::raw(*action),
+                Span::styled(format!("  {:<14}", key), Style::default().fg(t.yellow)),
+                Span::styled(*action, Style::default().fg(t.fg1)),
             ]));
         }
     }
 
     let help_paragraph = Paragraph::new(text)
         .block(block)
-        .style(Style::default().fg(Color::White));
+        .style(Style::default().fg(t.fg1).bg(t.bg0));
 
     frame.render_widget(help_paragraph, area);
 }
@@ -231,14 +241,17 @@ fn centered_fixed_rect(width: u16, height: u16, r: Rect) -> Rect {
     Rect::new(x, y, popup_width, popup_height)
 }
 
-fn render_create_dialog(frame: &mut Frame, state: &CreateNoteState) {
+fn render_create_dialog(frame: &mut Frame, state: &CreateNoteState, app: &App) {
+    let t = &app.theme;
     let area = centered_fixed_rect(50, 6, frame.area());
     frame.render_widget(Clear, area);
 
     let block = Block::default()
         .title(" New Note ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Cyan));
+        .border_type(theme::border_type())
+        .border_style(Style::default().fg(t.aqua))
+        .style(Style::default().bg(t.bg0));
 
     let inner = block.inner(area);
     frame.render_widget(block, area);
@@ -253,23 +266,23 @@ fn render_create_dialog(frame: &mut Frame, state: &CreateNoteState) {
 
     let text = vec![
         Line::from(vec![
-            Span::styled("Location: ", Style::default().fg(Color::DarkGray)),
-            Span::raw(parent_text),
+            Span::styled("Location: ", Style::default().fg(t.fg4)),
+            Span::styled(parent_text, Style::default().fg(t.fg2)),
         ]),
         Line::from(vec![
-            Span::styled("Name: ", Style::default().fg(Color::Yellow)),
-            Span::raw(&state.filename),
+            Span::styled("Name: ", Style::default().fg(t.yellow)),
+            Span::styled(&state.filename, Style::default().fg(t.fg1)),
             Span::styled(
                 "_",
                 Style::default()
-                    .fg(Color::Cyan)
+                    .fg(t.cursor_blink)
                     .add_modifier(Modifier::SLOW_BLINK),
             ),
         ]),
         Line::from(vec![Span::styled(
             "Tip: path/ = directory, path/name = note",
             Style::default()
-                .fg(Color::DarkGray)
+                .fg(t.fg4)
                 .add_modifier(Modifier::ITALIC),
         )]),
     ];
@@ -278,7 +291,8 @@ fn render_create_dialog(frame: &mut Frame, state: &CreateNoteState) {
     frame.render_widget(paragraph, inner);
 }
 
-fn render_delete_dialog(frame: &mut Frame, state: &DeleteConfirmState) {
+fn render_delete_dialog(frame: &mut Frame, state: &DeleteConfirmState, app: &App) {
+    let t = &app.theme;
     let has_warning = state.is_dir && state.note_count > 0;
     let height = if has_warning { 7 } else if state.is_dir { 6 } else { 5 };
     let area = centered_fixed_rect(45, height, frame.area());
@@ -293,20 +307,25 @@ fn render_delete_dialog(frame: &mut Frame, state: &DeleteConfirmState) {
     let block = Block::default()
         .title(title)
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Red));
+        .border_type(theme::border_type())
+        .border_style(Style::default().fg(t.red))
+        .style(Style::default().bg(t.bg0));
 
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
     let mut text = vec![
         Line::from(vec![
-            Span::raw(if state.is_dir {
-                "Delete directory "
-            } else {
-                "Delete "
-            }),
-            Span::styled(&state.name, Style::default().fg(Color::Yellow)),
-            Span::raw("?"),
+            Span::styled(
+                if state.is_dir {
+                    "Delete directory "
+                } else {
+                    "Delete "
+                },
+                Style::default().fg(t.fg1),
+            ),
+            Span::styled(&state.name, Style::default().fg(t.yellow)),
+            Span::styled("?", Style::default().fg(t.fg1)),
         ]),
     ];
 
@@ -319,20 +338,20 @@ fn render_delete_dialog(frame: &mut Frame, state: &DeleteConfirmState) {
         text.push(Line::from(Span::styled(
             warning,
             Style::default()
-                .fg(Color::Red)
+                .fg(t.red)
                 .add_modifier(Modifier::BOLD),
         )));
         text.push(Line::from(Span::styled(
             "This will delete all notes inside.",
             Style::default()
-                .fg(Color::DarkGray)
+                .fg(t.fg4)
                 .add_modifier(Modifier::ITALIC),
         )));
     } else if state.is_dir {
         text.push(Line::from(Span::styled(
             "(empty directory)",
             Style::default()
-                .fg(Color::DarkGray)
+                .fg(t.fg4)
                 .add_modifier(Modifier::ITALIC),
         )));
     }
@@ -341,15 +360,17 @@ fn render_delete_dialog(frame: &mut Frame, state: &DeleteConfirmState) {
         Span::styled(
             "y",
             Style::default()
-                .fg(Color::Green)
+                .fg(t.green)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::raw(" = yes    "),
+        Span::styled(" = yes    ", Style::default().fg(t.fg3)),
         Span::styled(
             "n/Esc",
-            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(t.red)
+                .add_modifier(Modifier::BOLD),
         ),
-        Span::raw(" = cancel"),
+        Span::styled(" = cancel", Style::default().fg(t.fg3)),
     ]));
 
     let paragraph = Paragraph::new(text);

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use color_eyre::Result;
@@ -29,6 +30,10 @@ pub struct UiConfig {
     pub tree_width: u16,
     #[serde(default = "default_true")]
     pub show_backlinks: bool,
+    #[serde(default = "default_theme")]
+    pub theme: String,
+    #[serde(default)]
+    pub theme_overrides: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -47,6 +52,10 @@ fn default_tree_width() -> u16 {
 
 fn default_true() -> bool {
     true
+}
+
+fn default_theme() -> String {
+    "gruvbox-dark".to_string()
 }
 
 fn default_editor() -> String {
@@ -71,6 +80,8 @@ impl Default for UiConfig {
             show_hidden: false,
             tree_width: default_tree_width(),
             show_backlinks: default_true(),
+            theme: default_theme(),
+            theme_overrides: HashMap::new(),
         }
     }
 }
