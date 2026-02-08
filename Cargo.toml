@@ -4,7 +4,11 @@ version = "0.1.0"
 edition = "2024"
 description = "A TUI notetaking app with wiki-style linking and graph visualization"
 license = "MIT"
-repository = "https://github.com/cursim/tui-jot"
+repository = "https://github.com/akashbagchi/tui-jot"
+homepage = "https://github.com/akashbagchi/tui-jot"
+readme = "README.md"
+keywords = ["tui", "notes", "markdown", "wiki", "terminal"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 ratatui = "0.29"

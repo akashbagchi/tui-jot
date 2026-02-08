@@ -30,6 +30,11 @@ impl Focus {
 
 pub fn render(frame: &mut Frame, app: &App) {
     let t = &app.theme;
+
+    // Fill entire screen with theme background
+    let bg = Block::default().style(Style::default().bg(t.bg0).fg(t.fg1));
+    frame.render_widget(bg, frame.area());
+
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([

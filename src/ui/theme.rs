@@ -232,55 +232,55 @@ pub fn gruvbox_dark() -> Theme {
 }
 
 pub fn gruvbox_light() -> Theme {
-    let bg0 = Color::Rgb(251, 241, 199);
-    let bg1 = Color::Rgb(235, 219, 178);
-    let bg2 = Color::Rgb(213, 196, 161);
-    let bg3 = Color::Rgb(189, 174, 147);
-    let bg4 = Color::Rgb(168, 153, 132);
-    let fg0 = Color::Rgb(40, 40, 40);
-    let fg1 = Color::Rgb(60, 56, 54);
-    let fg2 = Color::Rgb(80, 73, 69);
-    let fg3 = Color::Rgb(102, 92, 84);
-    let fg4 = Color::Rgb(124, 111, 100);
-    let red = Color::Rgb(204, 36, 29);
-    let green = Color::Rgb(152, 151, 26);
-    let yellow = Color::Rgb(215, 153, 33);
-    let blue = Color::Rgb(69, 133, 136);
-    let purple = Color::Rgb(177, 98, 134);
-    let aqua = Color::Rgb(104, 157, 106);
-    let orange = Color::Rgb(214, 93, 14);
+    let bg0 = Color::Rgb(251, 241, 199);   // fbf1c7
+    let bg1 = Color::Rgb(242, 229, 188);   // f2e5bc
+    let bg2 = Color::Rgb(235, 219, 178);   // ebdbb2
+    let bg3 = Color::Rgb(213, 196, 161);   // d5c4a1
+    let bg4 = Color::Rgb(189, 174, 147);   // bdae93
+    let fg0 = Color::Rgb(40, 40, 40);      // 282828
+    let fg1 = Color::Rgb(60, 56, 54);      // 3c3836
+    let fg2 = Color::Rgb(80, 73, 69);      // 504945
+    let fg3 = Color::Rgb(102, 92, 84);     // 665c54
+    let fg4 = Color::Rgb(124, 111, 100);   // 7c6f64
+    let red = Color::Rgb(204, 36, 29);     // cc241d
+    let green = Color::Rgb(121, 116, 14);  // 79740e (dark green for light bg)
+    let yellow = Color::Rgb(181, 118, 20); // b57614 (dark yellow for light bg)
+    let blue = Color::Rgb(7, 102, 120);    // 076678 (dark blue for light bg)
+    let purple = Color::Rgb(143, 63, 113); // 8f3f71 (dark purple for light bg)
+    let aqua = Color::Rgb(66, 123, 88);    // 427b58 (dark aqua for light bg)
+    let orange = Color::Rgb(175, 58, 3);   // af3a03 (dark orange for light bg)
 
     Theme {
         bg0, bg1, bg2, bg3, bg4,
         fg0, fg1, fg2, fg3, fg4,
         red, green, yellow, blue, purple, aqua, orange,
         border_focused: blue,
-        border_unfocused: bg3,
+        border_unfocused: bg4,
         border_overlay: orange,
-        selected_fg: fg0,
-        selected_bg: bg2,
+        selected_fg: bg0,
+        selected_bg: blue,
         heading_1: orange,
         heading_2: yellow,
         heading_3: aqua,
         link_fg: blue,
-        link_selected_fg: aqua,
-        link_selected_bg: bg2,
+        link_selected_fg: bg0,
+        link_selected_bg: blue,
         link_broken: red,
-        tag_fg: yellow,
+        tag_fg: purple,
         inline_code: orange,
-        title_fg: aqua,
-        title_bar_bg: bg1,
-        status_bar_bg: bg1,
+        title_fg: blue,
+        title_bar_bg: bg2,
+        status_bar_bg: bg2,
         cursor_blink: orange,
         empty_hint: fg4,
         dir_fg: yellow,
         file_fg: fg1,
         backlink_fg: purple,
-        tag_filter_border: yellow,
+        tag_filter_border: blue,
         search_prompt: green,
         finder_prompt: purple,
         autocomplete_bg: bg1,
-        autocomplete_sel_bg: bg2,
+        autocomplete_sel_bg: bg3,
     }
 }
 
@@ -338,55 +338,55 @@ pub fn catppuccin_mocha() -> Theme {
 }
 
 pub fn catppuccin_latte() -> Theme {
-    let bg0 = Color::Rgb(239, 241, 245);
-    let bg1 = Color::Rgb(230, 233, 239);
-    let bg2 = Color::Rgb(204, 208, 218);
-    let bg3 = Color::Rgb(188, 192, 204);
-    let bg4 = Color::Rgb(172, 176, 190);
-    let fg0 = Color::Rgb(76, 79, 105);
-    let fg1 = Color::Rgb(92, 95, 119);
-    let fg2 = Color::Rgb(108, 111, 133);
-    let fg3 = Color::Rgb(124, 127, 147);
-    let fg4 = Color::Rgb(140, 143, 161);
-    let red = Color::Rgb(210, 15, 57);
-    let green = Color::Rgb(64, 160, 43);
-    let yellow = Color::Rgb(223, 142, 29);
-    let blue = Color::Rgb(30, 102, 245);
-    let purple = Color::Rgb(136, 57, 239);
-    let aqua = Color::Rgb(23, 146, 153);
-    let orange = Color::Rgb(254, 100, 11);
+    let bg0 = Color::Rgb(239, 241, 245);   // eff1f5 Base
+    let bg1 = Color::Rgb(230, 233, 239);   // e6e9ef Mantle
+    let bg2 = Color::Rgb(220, 224, 232);   // dce0e8 Crust
+    let bg3 = Color::Rgb(204, 208, 218);   // ccd0da Surface0
+    let bg4 = Color::Rgb(188, 192, 204);   // bcc0cc Surface1
+    let fg0 = Color::Rgb(76, 79, 105);     // 4c4f69 Text
+    let fg1 = Color::Rgb(92, 95, 119);     // 5c5f77 Subtext1
+    let fg2 = Color::Rgb(108, 111, 133);   // 6c6f85 Subtext0
+    let fg3 = Color::Rgb(124, 127, 147);   // 7c7f93 Overlay2
+    let fg4 = Color::Rgb(156, 160, 176);   // 9ca0b0 Overlay0
+    let red = Color::Rgb(210, 15, 57);     // d20f39
+    let green = Color::Rgb(64, 160, 43);   // 40a02b
+    let yellow = Color::Rgb(223, 142, 29); // df8e1d
+    let blue = Color::Rgb(30, 102, 245);   // 1e66f5
+    let purple = Color::Rgb(136, 57, 239); // 8839ef
+    let aqua = Color::Rgb(23, 146, 153);   // 179299 Teal
+    let orange = Color::Rgb(254, 100, 11); // fe640b
 
     Theme {
         bg0, bg1, bg2, bg3, bg4,
         fg0, fg1, fg2, fg3, fg4,
         red, green, yellow, blue, purple, aqua, orange,
         border_focused: blue,
-        border_unfocused: bg3,
+        border_unfocused: bg4,
         border_overlay: orange,
-        selected_fg: fg0,
-        selected_bg: bg2,
+        selected_fg: bg0,
+        selected_bg: blue,
         heading_1: orange,
         heading_2: yellow,
         heading_3: aqua,
         link_fg: blue,
-        link_selected_fg: aqua,
-        link_selected_bg: bg2,
+        link_selected_fg: bg0,
+        link_selected_bg: blue,
         link_broken: red,
-        tag_fg: yellow,
+        tag_fg: purple,
         inline_code: orange,
-        title_fg: aqua,
-        title_bar_bg: bg1,
-        status_bar_bg: bg1,
+        title_fg: blue,
+        title_bar_bg: bg2,
+        status_bar_bg: bg2,
         cursor_blink: orange,
         empty_hint: fg4,
         dir_fg: yellow,
         file_fg: fg1,
         backlink_fg: purple,
-        tag_filter_border: yellow,
+        tag_filter_border: blue,
         search_prompt: green,
         finder_prompt: purple,
         autocomplete_bg: bg1,
-        autocomplete_sel_bg: bg2,
+        autocomplete_sel_bg: bg3,
     }
 }
 
@@ -444,55 +444,55 @@ pub fn tokyo_night() -> Theme {
 }
 
 pub fn tokyo_night_day() -> Theme {
-    let bg0 = Color::Rgb(212, 216, 232);
-    let bg1 = Color::Rgb(199, 203, 219);
-    let bg2 = Color::Rgb(182, 188, 209);
-    let bg3 = Color::Rgb(157, 163, 186);
-    let bg4 = Color::Rgb(132, 139, 167);
-    let fg0 = Color::Rgb(52, 54, 86);
-    let fg1 = Color::Rgb(56, 62, 104);
-    let fg2 = Color::Rgb(72, 78, 118);
-    let fg3 = Color::Rgb(107, 111, 142);
-    let fg4 = Color::Rgb(132, 139, 167);
-    let red = Color::Rgb(143, 85, 115);
-    let green = Color::Rgb(56, 110, 72);
-    let yellow = Color::Rgb(142, 108, 32);
-    let blue = Color::Rgb(52, 84, 138);
-    let purple = Color::Rgb(92, 72, 138);
-    let aqua = Color::Rgb(0, 114, 139);
-    let orange = Color::Rgb(150, 96, 47);
+    let bg0 = Color::Rgb(212, 216, 232);   // d4d8e8 bg
+    let bg1 = Color::Rgb(199, 203, 219);   // c7cbdb bg_dark
+    let bg2 = Color::Rgb(186, 191, 210);   // babfd2
+    let bg3 = Color::Rgb(169, 174, 196);   // a9aec4 comment
+    let bg4 = Color::Rgb(150, 156, 180);   // 969cb4
+    let fg0 = Color::Rgb(52, 54, 86);      // 343656 fg
+    let fg1 = Color::Rgb(56, 62, 104);     // 383e68 fg_dark
+    let fg2 = Color::Rgb(72, 78, 118);     // 484e76
+    let fg3 = Color::Rgb(107, 111, 142);   // 6b6f8e
+    let fg4 = Color::Rgb(136, 140, 166);   // 888ca6
+    let red = Color::Rgb(143, 85, 115);    // 8f5573
+    let green = Color::Rgb(56, 110, 72);   // 386e48
+    let yellow = Color::Rgb(142, 108, 32); // 8e6c20
+    let blue = Color::Rgb(52, 84, 138);    // 34548a
+    let purple = Color::Rgb(92, 72, 138);  // 5c488a
+    let aqua = Color::Rgb(0, 114, 139);    // 00728b
+    let orange = Color::Rgb(150, 96, 47);  // 96602f
 
     Theme {
         bg0, bg1, bg2, bg3, bg4,
         fg0, fg1, fg2, fg3, fg4,
         red, green, yellow, blue, purple, aqua, orange,
         border_focused: blue,
-        border_unfocused: bg3,
+        border_unfocused: bg4,
         border_overlay: orange,
-        selected_fg: fg0,
-        selected_bg: bg2,
+        selected_fg: bg0,
+        selected_bg: blue,
         heading_1: orange,
         heading_2: yellow,
         heading_3: aqua,
         link_fg: blue,
-        link_selected_fg: aqua,
-        link_selected_bg: bg2,
+        link_selected_fg: bg0,
+        link_selected_bg: blue,
         link_broken: red,
-        tag_fg: yellow,
+        tag_fg: purple,
         inline_code: orange,
-        title_fg: aqua,
-        title_bar_bg: bg1,
-        status_bar_bg: bg1,
+        title_fg: blue,
+        title_bar_bg: bg2,
+        status_bar_bg: bg2,
         cursor_blink: orange,
         empty_hint: fg4,
         dir_fg: yellow,
         file_fg: fg1,
         backlink_fg: purple,
-        tag_filter_border: yellow,
+        tag_filter_border: blue,
         search_prompt: green,
         finder_prompt: purple,
         autocomplete_bg: bg1,
-        autocomplete_sel_bg: bg2,
+        autocomplete_sel_bg: bg3,
     }
 }
 
