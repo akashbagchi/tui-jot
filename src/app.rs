@@ -13,8 +13,8 @@ use ratatui::{Terminal, backend::CrosstermBackend};
 use crate::config::Config;
 use crate::core::{Index, Vault};
 use crate::input::InputHandler;
-use crate::ui::{self, Focus};
 use crate::ui::theme::Theme;
+use crate::ui::{self, Focus};
 
 /// State for the create note dialog
 pub struct CreateNoteState {
@@ -24,9 +24,9 @@ pub struct CreateNoteState {
 
 /// State for the delete confirmation dialog
 pub struct DeleteConfirmState {
-    pub path: PathBuf,    // Relative path to delete
-    pub name: String,     // Display name for dialog
-    pub is_dir: bool,     // Whether the entry is a directory
+    pub path: PathBuf,     // Relative path to delete
+    pub name: String,      // Display name for dialog
+    pub is_dir: bool,      // Whether the entry is a directory
     pub note_count: usize, // Number of notes inside (directories only)
 }
 

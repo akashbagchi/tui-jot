@@ -82,9 +82,7 @@ fn render_title_bar(frame: &mut Frame, area: Rect, app: &App) {
         ),
         Span::styled(
             "tui-jot ",
-            Style::default()
-                .fg(t.title_fg)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(t.title_fg).add_modifier(Modifier::BOLD),
         ),
         Span::styled("│ ", Style::default().fg(t.bg3)),
         Span::styled(
@@ -124,7 +122,9 @@ fn render_backlinks(frame: &mut Frame, area: Rect, app: &App) {
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
     let t = &app.theme;
     let help_text = match app.focus {
-        Focus::Browser => "j/k: navigate  Enter: open  a: new  d: delete  t: tags  /: search  Ctrl+q: quit",
+        Focus::Browser => {
+            "j/k: navigate  Enter: open  a: new  d: delete  t: tags  /: search  Ctrl+q: quit"
+        }
         Focus::Viewer => "j/k: scroll  h/Esc: back  i: edit  /: search  Ctrl+p: find  Ctrl+q: quit",
         Focus::Backlinks => "j/k: navigate  Enter: open  Tab: switch pane  Ctrl+q: quit",
     };
@@ -217,9 +217,7 @@ fn render_help(frame: &mut Frame, app: &App) {
         }
         text.push(Line::from(Span::styled(
             *section,
-            Style::default()
-                .fg(t.aqua)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(t.aqua).add_modifier(Modifier::BOLD),
         )));
         for (key, action) in items {
             text.push(Line::from(vec![
@@ -286,9 +284,7 @@ fn render_create_dialog(frame: &mut Frame, state: &CreateNoteState, app: &App) {
         ]),
         Line::from(vec![Span::styled(
             "Tip: path/ = directory, path/name = note",
-            Style::default()
-                .fg(t.fg4)
-                .add_modifier(Modifier::ITALIC),
+            Style::default().fg(t.fg4).add_modifier(Modifier::ITALIC),
         )]),
     ];
 
@@ -299,7 +295,13 @@ fn render_create_dialog(frame: &mut Frame, state: &CreateNoteState, app: &App) {
 fn render_delete_dialog(frame: &mut Frame, state: &DeleteConfirmState, app: &App) {
     let t = &app.theme;
     let has_warning = state.is_dir && state.note_count > 0;
-    let height = if has_warning { 7 } else if state.is_dir { 6 } else { 5 };
+    let height = if has_warning {
+        7
+    } else if state.is_dir {
+        6
+    } else {
+        5
+    };
     let area = centered_fixed_rect(45, height, frame.area());
     frame.render_widget(Clear, area);
 
@@ -319,20 +321,18 @@ fn render_delete_dialog(frame: &mut Frame, state: &DeleteConfirmState, app: &App
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
-    let mut text = vec![
-        Line::from(vec![
-            Span::styled(
-                if state.is_dir {
-                    "Delete directory "
-                } else {
-                    "Delete "
-                },
-                Style::default().fg(t.fg1),
-            ),
-            Span::styled(&state.name, Style::default().fg(t.yellow)),
-            Span::styled("?", Style::default().fg(t.fg1)),
-        ]),
-    ];
+    let mut text = vec![Line::from(vec![
+        Span::styled(
+            if state.is_dir {
+                "Delete directory "
+            } else {
+                "Delete "
+            },
+            Style::default().fg(t.fg1),
+        ),
+        Span::styled(&state.name, Style::default().fg(t.yellow)),
+        Span::styled("?", Style::default().fg(t.fg1)),
+    ])];
 
     if has_warning {
         let warning = format!(
@@ -342,38 +342,28 @@ fn render_delete_dialog(frame: &mut Frame, state: &DeleteConfirmState, app: &App
         );
         text.push(Line::from(Span::styled(
             warning,
-            Style::default()
-                .fg(t.red)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(t.red).add_modifier(Modifier::BOLD),
         )));
         text.push(Line::from(Span::styled(
             "This will delete all notes inside.",
-            Style::default()
-                .fg(t.fg4)
-                .add_modifier(Modifier::ITALIC),
+            Style::default().fg(t.fg4).add_modifier(Modifier::ITALIC),
         )));
     } else if state.is_dir {
         text.push(Line::from(Span::styled(
             "(empty directory)",
-            Style::default()
-                .fg(t.fg4)
-                .add_modifier(Modifier::ITALIC),
+            Style::default().fg(t.fg4).add_modifier(Modifier::ITALIC),
         )));
     }
 
     text.push(Line::from(vec![
         Span::styled(
             "y",
-            Style::default()
-                .fg(t.green)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(t.green).add_modifier(Modifier::BOLD),
         ),
         Span::styled(" = yes    ", Style::default().fg(t.fg3)),
         Span::styled(
             "n/Esc",
-            Style::default()
-                .fg(t.red)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(t.red).add_modifier(Modifier::BOLD),
         ),
         Span::styled(" = cancel", Style::default().fg(t.fg3)),
     ]));

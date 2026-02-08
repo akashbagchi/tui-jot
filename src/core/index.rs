@@ -19,9 +19,7 @@ impl Index {
         for (path, note) in &vault.notes {
             // Index tags
             for tag in &note.tags {
-                tags.entry(tag.clone())
-                    .or_default()
-                    .insert(path.clone());
+                tags.entry(tag.clone()).or_default().insert(path.clone());
             }
 
             // Index forward links (normalized: lowercase, no .md extension)
@@ -40,7 +38,10 @@ impl Index {
             }
         }
 
-        Self { tags, forward_links }
+        Self {
+            tags,
+            forward_links,
+        }
     }
 
     /// Returns all note paths that have the given tag.

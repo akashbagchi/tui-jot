@@ -198,9 +198,23 @@ pub fn gruvbox_dark() -> Theme {
     let orange = Color::Rgb(254, 128, 25);
 
     Theme {
-        bg0, bg1, bg2, bg3, bg4,
-        fg0, fg1, fg2, fg3, fg4,
-        red, green, yellow, blue, purple, aqua, orange,
+        bg0,
+        bg1,
+        bg2,
+        bg3,
+        bg4,
+        fg0,
+        fg1,
+        fg2,
+        fg3,
+        fg4,
+        red,
+        green,
+        yellow,
+        blue,
+        purple,
+        aqua,
+        orange,
         border_focused: blue,
         border_unfocused: bg3,
         border_overlay: orange,
@@ -232,28 +246,42 @@ pub fn gruvbox_dark() -> Theme {
 }
 
 pub fn gruvbox_light() -> Theme {
-    let bg0 = Color::Rgb(251, 241, 199);   // fbf1c7
-    let bg1 = Color::Rgb(242, 229, 188);   // f2e5bc
-    let bg2 = Color::Rgb(235, 219, 178);   // ebdbb2
-    let bg3 = Color::Rgb(213, 196, 161);   // d5c4a1
-    let bg4 = Color::Rgb(189, 174, 147);   // bdae93
-    let fg0 = Color::Rgb(40, 40, 40);      // 282828
-    let fg1 = Color::Rgb(60, 56, 54);      // 3c3836
-    let fg2 = Color::Rgb(80, 73, 69);      // 504945
-    let fg3 = Color::Rgb(102, 92, 84);     // 665c54
-    let fg4 = Color::Rgb(124, 111, 100);   // 7c6f64
-    let red = Color::Rgb(204, 36, 29);     // cc241d
-    let green = Color::Rgb(121, 116, 14);  // 79740e (dark green for light bg)
+    let bg0 = Color::Rgb(251, 241, 199); // fbf1c7
+    let bg1 = Color::Rgb(242, 229, 188); // f2e5bc
+    let bg2 = Color::Rgb(235, 219, 178); // ebdbb2
+    let bg3 = Color::Rgb(213, 196, 161); // d5c4a1
+    let bg4 = Color::Rgb(189, 174, 147); // bdae93
+    let fg0 = Color::Rgb(40, 40, 40); // 282828
+    let fg1 = Color::Rgb(60, 56, 54); // 3c3836
+    let fg2 = Color::Rgb(80, 73, 69); // 504945
+    let fg3 = Color::Rgb(102, 92, 84); // 665c54
+    let fg4 = Color::Rgb(124, 111, 100); // 7c6f64
+    let red = Color::Rgb(204, 36, 29); // cc241d
+    let green = Color::Rgb(121, 116, 14); // 79740e (dark green for light bg)
     let yellow = Color::Rgb(181, 118, 20); // b57614 (dark yellow for light bg)
-    let blue = Color::Rgb(7, 102, 120);    // 076678 (dark blue for light bg)
+    let blue = Color::Rgb(7, 102, 120); // 076678 (dark blue for light bg)
     let purple = Color::Rgb(143, 63, 113); // 8f3f71 (dark purple for light bg)
-    let aqua = Color::Rgb(66, 123, 88);    // 427b58 (dark aqua for light bg)
-    let orange = Color::Rgb(175, 58, 3);   // af3a03 (dark orange for light bg)
+    let aqua = Color::Rgb(66, 123, 88); // 427b58 (dark aqua for light bg)
+    let orange = Color::Rgb(175, 58, 3); // af3a03 (dark orange for light bg)
 
     Theme {
-        bg0, bg1, bg2, bg3, bg4,
-        fg0, fg1, fg2, fg3, fg4,
-        red, green, yellow, blue, purple, aqua, orange,
+        bg0,
+        bg1,
+        bg2,
+        bg3,
+        bg4,
+        fg0,
+        fg1,
+        fg2,
+        fg3,
+        fg4,
+        red,
+        green,
+        yellow,
+        blue,
+        purple,
+        aqua,
+        orange,
         border_focused: blue,
         border_unfocused: bg4,
         border_overlay: orange,
@@ -304,9 +332,23 @@ pub fn catppuccin_mocha() -> Theme {
     let orange = Color::Rgb(250, 179, 135);
 
     Theme {
-        bg0, bg1, bg2, bg3, bg4,
-        fg0, fg1, fg2, fg3, fg4,
-        red, green, yellow, blue, purple, aqua, orange,
+        bg0,
+        bg1,
+        bg2,
+        bg3,
+        bg4,
+        fg0,
+        fg1,
+        fg2,
+        fg3,
+        fg4,
+        red,
+        green,
+        yellow,
+        blue,
+        purple,
+        aqua,
+        orange,
         border_focused: blue,
         border_unfocused: bg3,
         border_overlay: orange,
@@ -338,28 +380,42 @@ pub fn catppuccin_mocha() -> Theme {
 }
 
 pub fn catppuccin_latte() -> Theme {
-    let bg0 = Color::Rgb(239, 241, 245);   // eff1f5 Base
-    let bg1 = Color::Rgb(230, 233, 239);   // e6e9ef Mantle
-    let bg2 = Color::Rgb(220, 224, 232);   // dce0e8 Crust
-    let bg3 = Color::Rgb(204, 208, 218);   // ccd0da Surface0
-    let bg4 = Color::Rgb(188, 192, 204);   // bcc0cc Surface1
-    let fg0 = Color::Rgb(76, 79, 105);     // 4c4f69 Text
-    let fg1 = Color::Rgb(92, 95, 119);     // 5c5f77 Subtext1
-    let fg2 = Color::Rgb(108, 111, 133);   // 6c6f85 Subtext0
-    let fg3 = Color::Rgb(124, 127, 147);   // 7c7f93 Overlay2
-    let fg4 = Color::Rgb(156, 160, 176);   // 9ca0b0 Overlay0
-    let red = Color::Rgb(210, 15, 57);     // d20f39
-    let green = Color::Rgb(64, 160, 43);   // 40a02b
+    let bg0 = Color::Rgb(239, 241, 245); // eff1f5 Base
+    let bg1 = Color::Rgb(230, 233, 239); // e6e9ef Mantle
+    let bg2 = Color::Rgb(220, 224, 232); // dce0e8 Crust
+    let bg3 = Color::Rgb(204, 208, 218); // ccd0da Surface0
+    let bg4 = Color::Rgb(188, 192, 204); // bcc0cc Surface1
+    let fg0 = Color::Rgb(76, 79, 105); // 4c4f69 Text
+    let fg1 = Color::Rgb(92, 95, 119); // 5c5f77 Subtext1
+    let fg2 = Color::Rgb(108, 111, 133); // 6c6f85 Subtext0
+    let fg3 = Color::Rgb(124, 127, 147); // 7c7f93 Overlay2
+    let fg4 = Color::Rgb(156, 160, 176); // 9ca0b0 Overlay0
+    let red = Color::Rgb(210, 15, 57); // d20f39
+    let green = Color::Rgb(64, 160, 43); // 40a02b
     let yellow = Color::Rgb(223, 142, 29); // df8e1d
-    let blue = Color::Rgb(30, 102, 245);   // 1e66f5
+    let blue = Color::Rgb(30, 102, 245); // 1e66f5
     let purple = Color::Rgb(136, 57, 239); // 8839ef
-    let aqua = Color::Rgb(23, 146, 153);   // 179299 Teal
+    let aqua = Color::Rgb(23, 146, 153); // 179299 Teal
     let orange = Color::Rgb(254, 100, 11); // fe640b
 
     Theme {
-        bg0, bg1, bg2, bg3, bg4,
-        fg0, fg1, fg2, fg3, fg4,
-        red, green, yellow, blue, purple, aqua, orange,
+        bg0,
+        bg1,
+        bg2,
+        bg3,
+        bg4,
+        fg0,
+        fg1,
+        fg2,
+        fg3,
+        fg4,
+        red,
+        green,
+        yellow,
+        blue,
+        purple,
+        aqua,
+        orange,
         border_focused: blue,
         border_unfocused: bg4,
         border_overlay: orange,
@@ -410,9 +466,23 @@ pub fn tokyo_night() -> Theme {
     let orange = Color::Rgb(255, 158, 100);
 
     Theme {
-        bg0, bg1, bg2, bg3, bg4,
-        fg0, fg1, fg2, fg3, fg4,
-        red, green, yellow, blue, purple, aqua, orange,
+        bg0,
+        bg1,
+        bg2,
+        bg3,
+        bg4,
+        fg0,
+        fg1,
+        fg2,
+        fg3,
+        fg4,
+        red,
+        green,
+        yellow,
+        blue,
+        purple,
+        aqua,
+        orange,
         border_focused: blue,
         border_unfocused: bg3,
         border_overlay: orange,
@@ -444,28 +514,42 @@ pub fn tokyo_night() -> Theme {
 }
 
 pub fn tokyo_night_day() -> Theme {
-    let bg0 = Color::Rgb(212, 216, 232);   // d4d8e8 bg
-    let bg1 = Color::Rgb(199, 203, 219);   // c7cbdb bg_dark
-    let bg2 = Color::Rgb(186, 191, 210);   // babfd2
-    let bg3 = Color::Rgb(169, 174, 196);   // a9aec4 comment
-    let bg4 = Color::Rgb(150, 156, 180);   // 969cb4
-    let fg0 = Color::Rgb(52, 54, 86);      // 343656 fg
-    let fg1 = Color::Rgb(56, 62, 104);     // 383e68 fg_dark
-    let fg2 = Color::Rgb(72, 78, 118);     // 484e76
-    let fg3 = Color::Rgb(107, 111, 142);   // 6b6f8e
-    let fg4 = Color::Rgb(136, 140, 166);   // 888ca6
-    let red = Color::Rgb(143, 85, 115);    // 8f5573
-    let green = Color::Rgb(56, 110, 72);   // 386e48
+    let bg0 = Color::Rgb(212, 216, 232); // d4d8e8 bg
+    let bg1 = Color::Rgb(199, 203, 219); // c7cbdb bg_dark
+    let bg2 = Color::Rgb(186, 191, 210); // babfd2
+    let bg3 = Color::Rgb(169, 174, 196); // a9aec4 comment
+    let bg4 = Color::Rgb(150, 156, 180); // 969cb4
+    let fg0 = Color::Rgb(52, 54, 86); // 343656 fg
+    let fg1 = Color::Rgb(56, 62, 104); // 383e68 fg_dark
+    let fg2 = Color::Rgb(72, 78, 118); // 484e76
+    let fg3 = Color::Rgb(107, 111, 142); // 6b6f8e
+    let fg4 = Color::Rgb(136, 140, 166); // 888ca6
+    let red = Color::Rgb(143, 85, 115); // 8f5573
+    let green = Color::Rgb(56, 110, 72); // 386e48
     let yellow = Color::Rgb(142, 108, 32); // 8e6c20
-    let blue = Color::Rgb(52, 84, 138);    // 34548a
-    let purple = Color::Rgb(92, 72, 138);  // 5c488a
-    let aqua = Color::Rgb(0, 114, 139);    // 00728b
-    let orange = Color::Rgb(150, 96, 47);  // 96602f
+    let blue = Color::Rgb(52, 84, 138); // 34548a
+    let purple = Color::Rgb(92, 72, 138); // 5c488a
+    let aqua = Color::Rgb(0, 114, 139); // 00728b
+    let orange = Color::Rgb(150, 96, 47); // 96602f
 
     Theme {
-        bg0, bg1, bg2, bg3, bg4,
-        fg0, fg1, fg2, fg3, fg4,
-        red, green, yellow, blue, purple, aqua, orange,
+        bg0,
+        bg1,
+        bg2,
+        bg3,
+        bg4,
+        fg0,
+        fg1,
+        fg2,
+        fg3,
+        fg4,
+        red,
+        green,
+        yellow,
+        blue,
+        purple,
+        aqua,
+        orange,
         border_focused: blue,
         border_unfocused: bg4,
         border_overlay: orange,
@@ -516,9 +600,23 @@ pub fn nord() -> Theme {
     let orange = Color::Rgb(208, 135, 112);
 
     Theme {
-        bg0, bg1, bg2, bg3, bg4,
-        fg0, fg1, fg2, fg3, fg4,
-        red, green, yellow, blue, purple, aqua, orange,
+        bg0,
+        bg1,
+        bg2,
+        bg3,
+        bg4,
+        fg0,
+        fg1,
+        fg2,
+        fg3,
+        fg4,
+        red,
+        green,
+        yellow,
+        blue,
+        purple,
+        aqua,
+        orange,
         border_focused: blue,
         border_unfocused: bg3,
         border_overlay: orange,
@@ -569,9 +667,23 @@ pub fn dracula() -> Theme {
     let orange = Color::Rgb(255, 184, 108);
 
     Theme {
-        bg0, bg1, bg2, bg3, bg4,
-        fg0, fg1, fg2, fg3, fg4,
-        red, green, yellow, blue, purple, aqua, orange,
+        bg0,
+        bg1,
+        bg2,
+        bg3,
+        bg4,
+        fg0,
+        fg1,
+        fg2,
+        fg3,
+        fg4,
+        red,
+        green,
+        yellow,
+        blue,
+        purple,
+        aqua,
+        orange,
         border_focused: purple,
         border_unfocused: bg3,
         border_overlay: orange,

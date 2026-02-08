@@ -102,9 +102,9 @@ impl InputHandler {
 
         // Global keybindings (work in any focus)
         match key.code {
-            KeyCode::Char('q') 
+            KeyCode::Char('q')
                 if app.viewer_state.mode != EditorMode::Edit
-                    && key.modifiers.contains(KeyModifiers::CONTROL) => 
+                    && key.modifiers.contains(KeyModifiers::CONTROL) =>
             {
                 app.should_quit = true;
                 return Ok(());
@@ -133,7 +133,8 @@ impl InputHandler {
                 if old_focus == Focus::Browser && app.focus == Focus::Viewer {
                     let path = {
                         let entries = app.filtered_visible_entries();
-                        app.browser_state.selected_entry(&entries)
+                        app.browser_state
+                            .selected_entry(&entries)
                             .filter(|e| !e.is_dir)
                             .map(|e| e.path.clone())
                     };
@@ -182,7 +183,8 @@ impl InputHandler {
     fn handle_browser(app: &mut App, key: KeyEvent) {
         match key.code {
             KeyCode::Char('j') | KeyCode::Down => {
-                app.browser_state.move_down(app.filtered_visible_entries().len());
+                app.browser_state
+                    .move_down(app.filtered_visible_entries().len());
             }
             KeyCode::Char('k') | KeyCode::Up => {
                 app.browser_state.move_up();
@@ -190,7 +192,9 @@ impl InputHandler {
             KeyCode::Enter | KeyCode::Char('l') | KeyCode::Right => {
                 let entry_info = {
                     let entries = app.filtered_visible_entries();
-                    app.browser_state.selected_entry(&entries).map(|e| (e.is_dir, e.path.clone()))
+                    app.browser_state
+                        .selected_entry(&entries)
+                        .map(|e| (e.is_dir, e.path.clone()))
                 };
                 if let Some((is_dir, path)) = entry_info {
                     if is_dir {
@@ -207,7 +211,8 @@ impl InputHandler {
             KeyCode::Char('h') | KeyCode::Left => {
                 let dir_path = {
                     let entries = app.filtered_visible_entries();
-                    app.browser_state.selected_entry(&entries)
+                    app.browser_state
+                        .selected_entry(&entries)
                         .filter(|e| e.is_dir && e.expanded)
                         .map(|e| e.path.clone())
                 };
@@ -219,7 +224,8 @@ impl InputHandler {
                 app.browser_state.move_to_top();
             }
             KeyCode::Char('G') => {
-                app.browser_state.move_to_bottom(app.filtered_visible_entries().len());
+                app.browser_state
+                    .move_to_bottom(app.filtered_visible_entries().len());
             }
             KeyCode::Char('A') => {
                 // Create new note/directory in vault root
@@ -236,7 +242,11 @@ impl InputHandler {
                         if entry.is_dir {
                             entry.path.clone()
                         } else {
-                            entry.path.parent().map(|p| p.to_path_buf()).unwrap_or_default()
+                            entry
+                                .path
+                                .parent()
+                                .map(|p| p.to_path_buf())
+                                .unwrap_or_default()
                         }
                     } else {
                         PathBuf::new()
@@ -257,16 +267,26 @@ impl InputHandler {
                 // Delete note or directory
                 let delete_info = {
                     let entries = app.filtered_visible_entries();
-                    app.browser_state.selected_entry(&entries)
+                    app.browser_state
+                        .selected_entry(&entries)
                         .map(|e| (e.path.clone(), e.name.clone(), e.is_dir))
                 };
                 if let Some((path, name, is_dir)) = delete_info {
                     let note_count = if is_dir {
-                        app.vault.notes.keys().filter(|p| p.starts_with(&path)).count()
+                        app.vault
+                            .notes
+                            .keys()
+                            .filter(|p| p.starts_with(&path))
+                            .count()
                     } else {
                         0
                     };
-                    app.delete_confirm_state = Some(DeleteConfirmState { path, name, is_dir, note_count });
+                    app.delete_confirm_state = Some(DeleteConfirmState {
+                        path,
+                        name,
+                        is_dir,
+                        note_count,
+                    });
                 }
             }
             _ => {}
@@ -529,30 +549,24 @@ impl InputHandler {
             }
 
             // Navigate the list with Ctrl+n and Ctrl+p
-            KeyCode::Char('n')
-                if key.modifiers.contains(KeyModifiers::CONTROL) =>
-            {
+            KeyCode::Char('n') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 if let Some(ref mut state) = app.search_state {
                     state.move_down();
                 }
             }
-            KeyCode::Char('p')
-                if key.modifiers.contains(KeyModifiers::CONTROL) =>
-            {
+            KeyCode::Char('p') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 if let Some(ref mut state) = app.search_state {
                     state.move_up();
                 }
             }
 
             // Alt: Navigate using arrow keys (no modifier needed)
-            KeyCode::Down =>
-            {
+            KeyCode::Down => {
                 if let Some(ref mut state) = app.search_state {
                     state.move_down();
                 }
             }
-            KeyCode::Up =>
-            {
+            KeyCode::Up => {
                 if let Some(ref mut state) = app.search_state {
                     state.move_up();
                 }
@@ -602,16 +616,12 @@ impl InputHandler {
             KeyCode::Esc => {
                 app.finder_state = None;
             }
-            KeyCode::Down | KeyCode::Char('n')
-                if key.modifiers.contains(KeyModifiers::CONTROL) =>
-            {
+            KeyCode::Down | KeyCode::Char('n') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 if let Some(ref mut state) = app.finder_state {
                     state.move_down();
                 }
             }
-            KeyCode::Up | KeyCode::Char('p')
-                if key.modifiers.contains(KeyModifiers::CONTROL) =>
-            {
+            KeyCode::Up | KeyCode::Char('p') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 if let Some(ref mut state) = app.finder_state {
                     state.move_up();
                 }
@@ -740,7 +750,8 @@ impl InputHandler {
             // Update viewer state if we have a selection
             let note_path = {
                 let entries = app.filtered_visible_entries();
-                app.browser_state.selected_entry(&entries)
+                app.browser_state
+                    .selected_entry(&entries)
                     .filter(|e| !e.is_dir)
                     .map(|e| e.path.clone())
             };

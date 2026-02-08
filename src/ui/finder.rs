@@ -132,7 +132,12 @@ pub fn render(frame: &mut Frame, area: Rect, state: &FinderState, t: &Theme) {
     frame.render_widget(sep, sep_area);
 
     // Results
-    let results_area = Rect::new(inner.x, inner.y + 2, inner.width, inner.height.saturating_sub(2));
+    let results_area = Rect::new(
+        inner.x,
+        inner.y + 2,
+        inner.width,
+        inner.height.saturating_sub(2),
+    );
 
     if state.results.is_empty() {
         let empty = Paragraph::new(Line::from(Span::styled(

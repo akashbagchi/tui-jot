@@ -218,10 +218,7 @@ fn render_line(
 
     // Code blocks (simple detection)
     if trimmed.starts_with("```") {
-        return Line::from(Span::styled(
-            line.to_string(),
-            Style::default().fg(t.fg4),
-        ));
+        return Line::from(Span::styled(line.to_string(), Style::default().fg(t.fg4)));
     }
 
     // Parse inline elements (tags, links, bold, etc.)
@@ -351,9 +348,7 @@ fn render_inline(
 
                 spans.push(Span::styled(
                     tag,
-                    Style::default()
-                        .fg(t.tag_fg)
-                        .add_modifier(Modifier::ITALIC),
+                    Style::default().fg(t.tag_fg).add_modifier(Modifier::ITALIC),
                 ));
                 continue;
             }

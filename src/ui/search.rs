@@ -64,7 +64,9 @@ impl SearchState {
 
         // Sort by title then line number
         self.results.sort_by(|a, b| {
-            a.title.cmp(&b.title).then(a.line_number.cmp(&b.line_number))
+            a.title
+                .cmp(&b.title)
+                .then(a.line_number.cmp(&b.line_number))
         });
 
         // Limit results
@@ -140,7 +142,12 @@ pub fn render(frame: &mut Frame, area: Rect, state: &SearchState, t: &Theme) {
     frame.render_widget(sep, sep_area);
 
     // Results
-    let results_area = Rect::new(inner.x, inner.y + 2, inner.width, inner.height.saturating_sub(2));
+    let results_area = Rect::new(
+        inner.x,
+        inner.y + 2,
+        inner.width,
+        inner.height.saturating_sub(2),
+    );
 
     if state.results.is_empty() {
         let msg = if state.query.len() < 2 {
@@ -168,7 +175,10 @@ pub fn render(frame: &mut Frame, area: Rect, state: &SearchState, t: &Theme) {
                 // Truncate matched line if too long
                 let max_line_len = (popup_width as usize).saturating_sub(6);
                 let matched = if result.matched_line.len() > max_line_len {
-                    format!("{}...", &result.matched_line[..max_line_len.saturating_sub(3)])
+                    format!(
+                        "{}...",
+                        &result.matched_line[..max_line_len.saturating_sub(3)]
+                    )
                 } else {
                     result.matched_line.clone()
                 };

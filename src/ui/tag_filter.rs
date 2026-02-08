@@ -71,9 +71,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &TagFilterState, t: &Theme) 
 
     let mut items: Vec<ListItem> = vec![ListItem::new(Line::from(Span::styled(
         "  (clear filter)",
-        Style::default()
-            .fg(t.fg4)
-            .add_modifier(Modifier::ITALIC),
+        Style::default().fg(t.fg4).add_modifier(Modifier::ITALIC),
     )))];
 
     for tag in &state.tags {
