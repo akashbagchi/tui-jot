@@ -85,11 +85,7 @@ impl Graph {
         });
 
         // Connected nodes in a circle around center
-        let connected: Vec<&PathBuf> = self
-            .nodes
-            .keys()
-            .filter(|p| *p != center)
-            .collect();
+        let connected: Vec<&PathBuf> = self.nodes.keys().filter(|p| *p != center).collect();
 
         let radius = width.min(height) * 0.35;
         let angle_step = if connected.is_empty() {

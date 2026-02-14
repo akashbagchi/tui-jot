@@ -172,11 +172,7 @@ fn render_node_labels(
     let h = area.height as f64;
 
     for pos in &state.positions {
-        if let Some(node) = state
-            .graph
-            .as_ref()
-            .and_then(|g| g.nodes.get(&pos.path))
-        {
+        if let Some(node) = state.graph.as_ref().and_then(|g| g.nodes.get(&pos.path)) {
             let is_selected = state.selected_node.as_ref() == Some(&pos.path);
 
             // Map graph coordinates to terminal coordinates
@@ -189,9 +185,7 @@ fn render_node_labels(
             }
 
             let style = if is_selected {
-                Style::default()
-                    .fg(t.yellow)
-                    .add_modifier(Modifier::BOLD)
+                Style::default().fg(t.yellow).add_modifier(Modifier::BOLD)
             } else {
                 Style::default().fg(t.fg1)
             };
