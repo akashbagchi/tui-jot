@@ -48,6 +48,7 @@ pub struct App {
     pub active_tag_filter: Option<String>,
     pub search_state: Option<ui::SearchState>,
     pub finder_state: Option<ui::FinderState>,
+    pub graph_view_state: Option<ui::GraphViewState>,
 }
 
 impl App {
@@ -75,6 +76,7 @@ impl App {
             active_tag_filter: None,
             search_state: None,
             finder_state: None,
+            graph_view_state: None,
         })
     }
 

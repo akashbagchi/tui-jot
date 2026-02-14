@@ -7,7 +7,7 @@ use ratatui::{Terminal, backend::CrosstermBackend};
 
 use crate::app::{App, CreateNoteState, DeleteConfirmState};
 use crate::core::Index;
-use crate::ui::{EditorMode, FinderState, Focus, SearchState, TagFilterState};
+use crate::ui::{EditorMode, FinderState, Focus, GraphViewState, SearchState, TagFilterState};
 
 pub struct InputHandler;
 
@@ -100,6 +100,12 @@ impl InputHandler {
             return Ok(());
         }
 
+        // Handle graph view
+        if app.graph_view_state.is_some() {
+            Self::handle_graph_view(app, key);
+            return Ok(());
+        }
+
         // Global keybindings (work in any focus)
         match key.code {
             KeyCode::Char('q')
@@ -156,6 +162,25 @@ impl InputHandler {
                     && app.viewer_state.mode != EditorMode::Edit =>
             {
                 app.finder_state = Some(FinderState::new(&app.vault));
+                return Ok(());
+            }
+            KeyCode::Char('g') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                // Open graph view (local graph centered on current note)
+                let center_path = {
+                    let entries = app.filtered_visible_entries();
+                    app.browser_state
+                        .selected_entry(&entries)
+                        .filter(|e| !e.is_dir)
+                        .map(|e| e.path.clone())
+                };
+                let size = terminal.size()?;
+                let mut state = GraphViewState::new();
+                if let Some(ref path) = center_path {
+                    state.update_local(&app.vault, path, size.width, size.height);
+                } else {
+                    state.update_global(&app.vault, size.width, size.height);
+                }
+                app.graph_view_state = Some(state);
                 return Ok(());
             }
             KeyCode::Char('b') if key.modifiers.contains(KeyModifiers::CONTROL) => {
@@ -659,6 +684,57 @@ impl InputHandler {
                 if let Some(ref mut state) = app.finder_state {
                     state.query.push(c);
                     state.update_results(&app.vault);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_graph_view(app: &mut App, key: KeyEvent) {
+        match key.code {
+            KeyCode::Esc => {
+                app.graph_view_state = None;
+            }
+            KeyCode::Char('j') | KeyCode::Down => {
+                if let Some(ref mut state) = app.graph_view_state {
+                    state.move_selection((0, 1));
+                }
+            }
+            KeyCode::Char('k') | KeyCode::Up => {
+                if let Some(ref mut state) = app.graph_view_state {
+                    state.move_selection((0, -1));
+                }
+            }
+            KeyCode::Char('l') | KeyCode::Right => {
+                if let Some(ref mut state) = app.graph_view_state {
+                    state.move_selection((1, 0));
+                }
+            }
+            KeyCode::Char('h') | KeyCode::Left => {
+                if let Some(ref mut state) = app.graph_view_state {
+                    state.move_selection((-1, 0));
+                }
+            }
+            KeyCode::Enter => {
+                // Navigate to the selected node
+                let target = app
+                    .graph_view_state
+                    .as_ref()
+                    .and_then(|s| s.selected_node.clone());
+                if let Some(path) = target {
+                    app.graph_view_state = None;
+                    if let Some(index) = app
+                        .filtered_visible_entries()
+                        .iter()
+                        .position(|e| e.path == path)
+                    {
+                        app.browser_state.select(index);
+                        if let Some(note) = app.vault.get_note(&path) {
+                            app.viewer_state.update_links(note);
+                        }
+                        app.viewer_scroll = 0;
+                        app.focus = Focus::Viewer;
+                    }
                 }
             }
             _ => {}

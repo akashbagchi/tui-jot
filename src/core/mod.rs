@@ -1,7 +1,9 @@
+mod graph;
 mod index;
 mod note;
 mod vault;
 
+pub use graph::{Graph, GraphEdge, GraphNode, NodePosition};
 pub use index::Index;
 pub use note::Note;
 pub use vault::{TreeEntry, Vault};
