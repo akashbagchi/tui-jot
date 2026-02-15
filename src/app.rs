@@ -49,6 +49,7 @@ pub struct App {
     pub search_state: Option<ui::SearchState>,
     pub finder_state: Option<ui::FinderState>,
     pub graph_view_state: Option<ui::GraphViewState>,
+    pub find_in_note_state: Option<ui::FindInNoteState>,
     pub viewer_area_height: u16,
 }
 
@@ -78,6 +79,7 @@ impl App {
             search_state: None,
             finder_state: None,
             graph_view_state: None,
+            find_in_note_state: None,
             viewer_area_height: 0,
         })
     }

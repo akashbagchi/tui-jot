@@ -9,7 +9,7 @@ use ratatui::{
 use crate::app::{App, CreateNoteState, DeleteConfirmState};
 
 use super::theme;
-use super::{backlinks, browser, finder, graph_view, search, tag_filter, viewer};
+use super::{backlinks, browser, find_in_note, finder, graph_view, search, tag_filter, viewer};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Focus {
@@ -74,6 +74,10 @@ pub fn render(frame: &mut Frame, app: &mut App) {
 
     if let Some(state) = &app.graph_view_state {
         graph_view::render(frame, frame.area(), state, t);
+    }
+
+    if let Some(state) = &app.find_in_note_state {
+        find_in_note::render_find_bar(frame, frame.area(), state, t);
     }
 }
 

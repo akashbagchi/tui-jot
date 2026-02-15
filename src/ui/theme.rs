@@ -56,6 +56,9 @@ pub struct Theme {
     pub autocomplete_bg: Color,
     pub autocomplete_sel_bg: Color,
     pub cursor_line_bg: Color,
+    pub selection_bg: Color,
+    pub find_match_bg: Color,
+    pub find_current_bg: Color,
 }
 
 impl Theme {
@@ -143,6 +146,9 @@ impl Theme {
                     "autocomplete_bg" => self.autocomplete_bg = color,
                     "autocomplete_sel_bg" => self.autocomplete_sel_bg = color,
                     "cursor_line_bg" => self.cursor_line_bg = color,
+                    "selection_bg" => self.selection_bg = color,
+                    "find_match_bg" => self.find_match_bg = color,
+                    "find_current_bg" => self.find_current_bg = color,
                     _ => {}
                 }
             }
@@ -245,6 +251,9 @@ pub fn gruvbox_dark() -> Theme {
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg2,
         cursor_line_bg: bg1,
+        selection_bg: bg2,
+        find_match_bg: bg3,
+        find_current_bg: yellow,
     }
 }
 
@@ -313,6 +322,9 @@ pub fn gruvbox_light() -> Theme {
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg3,
         cursor_line_bg: bg2,
+        selection_bg: bg3,
+        find_match_bg: bg4,
+        find_current_bg: yellow,
     }
 }
 
@@ -381,6 +393,9 @@ pub fn catppuccin_mocha() -> Theme {
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg2,
         cursor_line_bg: bg1,
+        selection_bg: bg2,
+        find_match_bg: bg3,
+        find_current_bg: yellow,
     }
 }
 
@@ -449,6 +464,9 @@ pub fn catppuccin_latte() -> Theme {
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg3,
         cursor_line_bg: bg2,
+        selection_bg: bg3,
+        find_match_bg: bg4,
+        find_current_bg: yellow,
     }
 }
 
@@ -517,6 +535,9 @@ pub fn tokyo_night() -> Theme {
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg2,
         cursor_line_bg: bg1,
+        selection_bg: bg2,
+        find_match_bg: bg3,
+        find_current_bg: yellow,
     }
 }
 
@@ -585,6 +606,9 @@ pub fn tokyo_night_day() -> Theme {
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg3,
         cursor_line_bg: bg2,
+        selection_bg: bg3,
+        find_match_bg: bg4,
+        find_current_bg: yellow,
     }
 }
 
@@ -653,6 +677,9 @@ pub fn nord() -> Theme {
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg2,
         cursor_line_bg: bg1,
+        selection_bg: bg2,
+        find_match_bg: bg3,
+        find_current_bg: yellow,
     }
 }
 
@@ -721,5 +748,8 @@ pub fn dracula() -> Theme {
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg2,
         cursor_line_bg: bg1,
+        selection_bg: bg2,
+        find_match_bg: bg3,
+        find_current_bg: yellow,
     }
 }

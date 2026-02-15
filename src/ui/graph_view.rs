@@ -217,7 +217,7 @@ fn render_status(frame: &mut Frame, area: Rect, t: &crate::ui::theme::Theme) {
         height: 1,
     };
 
-    let help = " [hjkl] navigate  [Enter] open  [Esc] close";
+    let help = " [hjkl] navigate  [Tab] toggle local/global  [Enter] open  [Esc] close";
     let text = Line::from(Span::styled(help, Style::default().fg(t.fg4)));
     frame.render_widget(Paragraph::new(text), status_area);
 }

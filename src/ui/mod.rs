@@ -1,5 +1,6 @@
 mod backlinks;
 mod browser;
+pub mod find_in_note;
 mod finder;
 pub mod graph_view;
 mod layout;
@@ -11,6 +12,7 @@ mod viewer_state;
 
 pub use backlinks::BacklinksState;
 pub use browser::BrowserState;
+pub use find_in_note::FindInNoteState;
 pub use finder::FinderState;
 pub use graph_view::GraphViewState;
 pub use layout::{Focus, render};

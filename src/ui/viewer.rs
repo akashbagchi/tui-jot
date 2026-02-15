@@ -6,6 +6,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Wrap},
 };
 
+use super::find_in_note::FindInNoteState;
 use super::viewer_state::{AutocompleteState, EditorMode, ViewerState};
 use crate::app::App;
 use crate::core::Note;
@@ -40,9 +41,16 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App) {
         match app.viewer_state.mode {
             EditorMode::Read => {
                 let read_cursor_line = app.viewer_state.read_cursor.line;
-                render_markdown(note, &app.viewer_state, &app.vault, t, read_cursor_line)
+                render_markdown(
+                    note,
+                    &app.viewer_state,
+                    &app.vault,
+                    t,
+                    read_cursor_line,
+                    app.find_in_note_state.as_ref(),
+                )
             }
-            EditorMode::Edit => render_edit_mode(&app.viewer_state),
+            EditorMode::Edit => render_edit_mode(&app.viewer_state, t),
         }
     } else {
         Text::from(vec![
@@ -89,12 +97,50 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App) {
     }
 }
 
-fn render_edit_mode(viewer_state: &ViewerState) -> Text<'static> {
+fn render_edit_mode(viewer_state: &ViewerState, t: &Theme) -> Text<'static> {
     let mut lines: Vec<Line<'static>> = Vec::new();
+    let has_selection = viewer_state.selection.is_some();
 
     for line_idx in 0..viewer_state.content.len_lines() {
-        let line = viewer_state.content.line(line_idx).to_string();
-        lines.push(Line::from(line));
+        let line_text = viewer_state.content.line(line_idx).to_string();
+
+        if has_selection {
+            // Render with per-character selection highlighting
+            let chars: Vec<char> = line_text.chars().collect();
+            let mut spans: Vec<Span<'static>> = Vec::new();
+            let mut current = String::new();
+            let mut in_selection = false;
+
+            for (col, &ch) in chars.iter().enumerate() {
+                let selected = viewer_state.is_char_selected(line_idx, col);
+                if selected != in_selection {
+                    // Flush current span
+                    if !current.is_empty() {
+                        let style = if in_selection {
+                            Style::default().bg(t.selection_bg)
+                        } else {
+                            Style::default()
+                        };
+                        spans.push(Span::styled(current.clone(), style));
+                        current.clear();
+                    }
+                    in_selection = selected;
+                }
+                current.push(ch);
+            }
+            // Flush remaining
+            if !current.is_empty() {
+                let style = if in_selection {
+                    Style::default().bg(t.selection_bg)
+                } else {
+                    Style::default()
+                };
+                spans.push(Span::styled(current, style));
+            }
+            lines.push(Line::from(spans));
+        } else {
+            lines.push(Line::from(line_text));
+        }
     }
 
     Text::from(lines)
@@ -177,13 +223,29 @@ fn render_markdown(
     vault: &crate::core::Vault,
     t: &Theme,
     read_cursor_line: usize,
+    find_state: Option<&FindInNoteState>,
 ) -> Text<'static> {
     let mut lines: Vec<Line<'static>> = Vec::new();
 
     for (line_idx, line) in note.content.lines().enumerate() {
         let mut rendered = render_line(line, note, viewer_state, line_idx, vault, t);
-        if line_idx == read_cursor_line {
-            // Apply cursor line background to all spans
+
+        // Priority: find_current > find_match > selection > cursor_line
+        let is_current_find = find_state
+            .map(|fs| fs.is_current_match_line(line_idx))
+            .unwrap_or(false);
+        let has_find_match = find_state
+            .map(|fs| fs.has_match_on_line(line_idx))
+            .unwrap_or(false);
+        let is_selected = viewer_state.is_line_selected(line_idx);
+
+        if is_current_find {
+            rendered = rendered.style(Style::default().bg(t.find_current_bg));
+        } else if has_find_match {
+            rendered = rendered.style(Style::default().bg(t.find_match_bg));
+        } else if is_selected {
+            rendered = rendered.style(Style::default().bg(t.selection_bg));
+        } else if line_idx == read_cursor_line {
             rendered = rendered.style(Style::default().bg(t.cursor_line_bg));
         }
         lines.push(rendered);

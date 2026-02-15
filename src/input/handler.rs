@@ -7,7 +7,22 @@ use ratatui::{Terminal, backend::CrosstermBackend};
 
 use crate::app::{App, CreateNoteState, DeleteConfirmState};
 use crate::core::Index;
-use crate::ui::{EditorMode, FinderState, Focus, GraphViewState, SearchState, TagFilterState};
+use crate::ui::graph_view::GraphMode;
+use crate::ui::{
+    EditorMode, FindInNoteState, FinderState, Focus, GraphViewState, SearchState, TagFilterState,
+};
+
+fn copy_to_clipboard(text: &str) {
+    if let Ok(mut clipboard) = arboard::Clipboard::new() {
+        let _ = clipboard.set_text(text);
+    }
+}
+
+fn paste_from_clipboard() -> Option<String> {
+    arboard::Clipboard::new()
+        .ok()
+        .and_then(|mut cb| cb.get_text().ok())
+}
 
 pub struct InputHandler;
 
@@ -45,6 +60,19 @@ impl InputHandler {
                     app.viewer_state.update_links(note);
                 }
                 app.viewer_scroll = 0;
+            }
+        }
+    }
+
+    fn save_and_reload(app: &mut App) {
+        if let Some(path) = app.viewer_state.current_note_path.clone() {
+            let content = app.viewer_state.content.to_string();
+            let full_path = app.vault.root.join(&path);
+            let _ = std::fs::write(&full_path, &content);
+            app.vault.reload_note(&path);
+            app.index = Index::build(&app.vault);
+            if let Some(note) = app.vault.get_note(&path) {
+                app.viewer_state.update_links(note);
             }
         }
     }
@@ -102,7 +130,13 @@ impl InputHandler {
 
         // Handle graph view
         if app.graph_view_state.is_some() {
-            Self::handle_graph_view(app, key);
+            Self::handle_graph_view(app, key, terminal)?;
+            return Ok(());
+        }
+
+        // Handle find-in-note overlay
+        if app.find_in_note_state.is_some() {
+            Self::handle_find_in_note(app, key);
             return Ok(());
         }
 
@@ -116,8 +150,11 @@ impl InputHandler {
                 return Ok(());
             }
             KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                app.should_quit = true;
-                return Ok(());
+                // In edit mode, Ctrl+C is copy (handled in handle_viewer_edit)
+                if app.viewer_state.mode != EditorMode::Edit {
+                    app.should_quit = true;
+                    return Ok(());
+                }
             }
             KeyCode::Char('k') | KeyCode::Char('K')
                 if key.modifiers.contains(KeyModifiers::CONTROL)
@@ -162,6 +199,16 @@ impl InputHandler {
                     && app.viewer_state.mode != EditorMode::Edit =>
             {
                 app.finder_state = Some(FinderState::new(&app.vault));
+                return Ok(());
+            }
+            KeyCode::Char('f')
+                if key.modifiers.contains(KeyModifiers::CONTROL)
+                    && app.viewer_state.mode != EditorMode::Edit =>
+            {
+                // Open find-in-note
+                let mut state = FindInNoteState::new();
+                state.update_matches(&app.viewer_state.content);
+                app.find_in_note_state = Some(state);
                 return Ok(());
             }
             KeyCode::Char('g') if key.modifiers.contains(KeyModifiers::CONTROL) => {
@@ -339,11 +386,86 @@ impl InputHandler {
     }
 
     fn handle_viewer_read(app: &mut App, key: KeyEvent) {
+        // Handle visual selection mode first
+        if app.viewer_state.selection.is_some() {
+            match key.code {
+                KeyCode::Char('j') | KeyCode::Down => {
+                    app.viewer_state.move_read_cursor_down();
+                    app.viewer_state.update_selection_head();
+                    Self::ensure_read_cursor_visible(app);
+                    return;
+                }
+                KeyCode::Char('k') | KeyCode::Up => {
+                    app.viewer_state.move_read_cursor_up();
+                    app.viewer_state.update_selection_head();
+                    Self::ensure_read_cursor_visible(app);
+                    return;
+                }
+                KeyCode::Char('g') => {
+                    app.viewer_state.read_cursor.line = 0;
+                    app.viewer_state.read_cursor.col = 0;
+                    app.viewer_state.update_selection_head();
+                    Self::ensure_read_cursor_visible(app);
+                    return;
+                }
+                KeyCode::Char('G') => {
+                    app.viewer_state.read_cursor.line =
+                        app.viewer_state.content.len_lines().saturating_sub(1);
+                    app.viewer_state.read_cursor.col = 0;
+                    app.viewer_state.update_selection_head();
+                    Self::ensure_read_cursor_visible(app);
+                    return;
+                }
+                KeyCode::Char('y') => {
+                    // Yank (copy)
+                    if let Some(text) = app.viewer_state.selected_text() {
+                        copy_to_clipboard(&text);
+                        app.viewer_state.clipboard = Some(text);
+                    }
+                    app.viewer_state.clear_selection();
+                    return;
+                }
+                KeyCode::Char('d') if !key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    // Cut selected lines
+                    if let Some(text) = app.viewer_state.delete_selected_text() {
+                        copy_to_clipboard(&text);
+                        app.viewer_state.clipboard = Some(text);
+                        Self::save_and_reload(app);
+                    }
+                    return;
+                }
+                KeyCode::Esc => {
+                    app.viewer_state.clear_selection();
+                    return;
+                }
+                _ => {}
+            }
+        }
+
         match key.code {
             KeyCode::Char('i') => {
                 if app.selected_note().is_some() {
                     app.viewer_state.enter_edit_mode();
                 }
+            }
+            KeyCode::Char('v') => {
+                // Start visual selection
+                app.viewer_state.start_visual_selection();
+            }
+            KeyCode::Char('p') if !key.modifiers.contains(KeyModifiers::CONTROL) => {
+                // Paste from clipboard at read cursor
+                let text = paste_from_clipboard()
+                    .or_else(|| app.viewer_state.clipboard.clone());
+                if let Some(text) = text {
+                    app.viewer_state.paste_text_at_read_cursor(&text);
+                    Self::save_and_reload(app);
+                }
+            }
+            KeyCode::Char('f') if !key.modifiers.contains(KeyModifiers::CONTROL) => {
+                // Open find-in-note
+                let mut state = FindInNoteState::new();
+                state.update_matches(&app.viewer_state.content);
+                app.find_in_note_state = Some(state);
             }
             KeyCode::Char('j') => {
                 app.viewer_scroll = app.viewer_scroll.saturating_add(1);
@@ -444,6 +566,33 @@ impl InputHandler {
             KeyCode::Char('y') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 app.viewer_state.redo();
             }
+            // Ctrl+C — copy selection (or do nothing if no selection)
+            KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                if let Some(text) = app.viewer_state.selected_text() {
+                    copy_to_clipboard(&text);
+                    app.viewer_state.clipboard = Some(text);
+                    app.viewer_state.clear_selection();
+                }
+            }
+            // Ctrl+X — cut selection
+            KeyCode::Char('x') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                if let Some(text) = app.viewer_state.delete_selected_text() {
+                    copy_to_clipboard(&text);
+                    app.viewer_state.clipboard = Some(text);
+                }
+            }
+            // Ctrl+V — paste (replacing selection if any)
+            KeyCode::Char('v') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                // Delete selection first if any
+                if app.viewer_state.selection.is_some() {
+                    app.viewer_state.delete_selected_text();
+                }
+                let text = paste_from_clipboard()
+                    .or_else(|| app.viewer_state.clipboard.clone());
+                if let Some(text) = text {
+                    app.viewer_state.paste_text(&text);
+                }
+            }
             KeyCode::Esc => {
                 // Exit edit mode and save
                 let content = app.viewer_state.exit_edit_mode();
@@ -458,47 +607,87 @@ impl InputHandler {
                     }
                 }
             }
+            // Shift+Arrow keys for char-level selection
+            KeyCode::Left if key.modifiers.contains(KeyModifiers::SHIFT) => {
+                app.viewer_state.start_char_selection();
+                app.viewer_state.move_cursor_left();
+                app.viewer_state.update_selection_head();
+            }
+            KeyCode::Right if key.modifiers.contains(KeyModifiers::SHIFT) => {
+                app.viewer_state.start_char_selection();
+                app.viewer_state.move_cursor_right();
+                app.viewer_state.update_selection_head();
+            }
+            KeyCode::Up if key.modifiers.contains(KeyModifiers::SHIFT) => {
+                app.viewer_state.start_char_selection();
+                app.viewer_state.move_cursor_up();
+                app.viewer_state.update_selection_head();
+            }
+            KeyCode::Down if key.modifiers.contains(KeyModifiers::SHIFT) => {
+                app.viewer_state.start_char_selection();
+                app.viewer_state.move_cursor_down();
+                app.viewer_state.update_selection_head();
+            }
             KeyCode::Char(c) => {
+                // If selection active, replace it
+                if app.viewer_state.selection.is_some() {
+                    app.viewer_state.delete_selected_text();
+                }
                 app.viewer_state.insert_char(c);
                 app.viewer_state.update_autocomplete_matches(&app.vault);
             }
             KeyCode::Enter => {
+                if app.viewer_state.selection.is_some() {
+                    app.viewer_state.delete_selected_text();
+                }
                 app.viewer_state.insert_newline();
             }
             KeyCode::Backspace => {
-                app.viewer_state.delete_char();
+                if app.viewer_state.selection.is_some() {
+                    app.viewer_state.delete_selected_text();
+                } else {
+                    app.viewer_state.delete_char();
+                }
                 app.viewer_state.update_autocomplete_matches(&app.vault);
             }
             KeyCode::Delete => {
-                app.viewer_state.delete_forward();
+                if app.viewer_state.selection.is_some() {
+                    app.viewer_state.delete_selected_text();
+                } else {
+                    app.viewer_state.delete_forward();
+                }
                 app.viewer_state.update_autocomplete_matches(&app.vault);
             }
             KeyCode::Left => {
+                app.viewer_state.clear_selection();
                 if key.modifiers.contains(KeyModifiers::CONTROL) {
-                    // Word movement - simplified: just move to start of line
                     app.viewer_state.move_word_left();
                 } else {
                     app.viewer_state.move_cursor_left();
                 }
             }
             KeyCode::Right => {
+                app.viewer_state.clear_selection();
                 if key.modifiers.contains(KeyModifiers::CONTROL) {
-                    // Word movement - simplified: just move to end of line
                     app.viewer_state.move_word_right();
                 } else {
                     app.viewer_state.move_cursor_right();
                 }
             }
             KeyCode::Up => {
+                app.viewer_state.clear_selection();
                 app.viewer_state.move_cursor_up();
             }
             KeyCode::Down => {
+                app.viewer_state.clear_selection();
                 app.viewer_state.move_cursor_down();
             }
             KeyCode::Home => {
+                app.viewer_state.clear_selection();
                 app.viewer_state.move_to_line_start();
             }
             KeyCode::End => {
+                app.viewer_state.clear_selection();
                 app.viewer_state.move_to_line_end();
             }
             _ => {}
@@ -739,10 +928,37 @@ impl InputHandler {
         }
     }
 
-    fn handle_graph_view(app: &mut App, key: KeyEvent) {
+    fn handle_graph_view(
+        app: &mut App,
+        key: KeyEvent,
+        terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    ) -> Result<()> {
         match key.code {
             KeyCode::Esc => {
                 app.graph_view_state = None;
+            }
+            KeyCode::Tab => {
+                // Toggle between Local and Global graph
+                if let Some(ref mut state) = app.graph_view_state {
+                    let size = terminal.size()?;
+                    match state.mode {
+                        GraphMode::Local => {
+                            state.update_global(&app.vault, size.width, size.height);
+                        }
+                        GraphMode::Global => {
+                            // Switch to local centered on selected note (or first note)
+                            let center = state
+                                .selected_node
+                                .clone()
+                                .or_else(|| {
+                                    app.vault.notes.keys().next().cloned()
+                                });
+                            if let Some(ref path) = center {
+                                state.update_local(&app.vault, path, size.width, size.height);
+                            }
+                        }
+                    }
+                }
             }
             KeyCode::Char('j') | KeyCode::Down => {
                 if let Some(ref mut state) = app.graph_view_state {
@@ -783,6 +999,64 @@ impl InputHandler {
                         }
                         app.viewer_scroll = 0;
                         app.focus = Focus::Viewer;
+                    }
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn handle_find_in_note(app: &mut App, key: KeyEvent) {
+        match key.code {
+            KeyCode::Esc => {
+                app.find_in_note_state = None;
+            }
+            KeyCode::Enter | KeyCode::Char('n')
+                if key.code == KeyCode::Enter
+                    || key.modifiers.contains(KeyModifiers::CONTROL) =>
+            {
+                if let Some(ref mut state) = app.find_in_note_state {
+                    state.next_match();
+                    // Scroll to the current match
+                    if let Some(m) = state.current() {
+                        app.viewer_scroll = m.line.saturating_sub(5) as u16;
+                    }
+                }
+            }
+            KeyCode::Char('p') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                if let Some(ref mut state) = app.find_in_note_state {
+                    state.prev_match();
+                    if let Some(m) = state.current() {
+                        app.viewer_scroll = m.line.saturating_sub(5) as u16;
+                    }
+                }
+            }
+            KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::ALT) => {
+                if let Some(ref mut state) = app.find_in_note_state {
+                    state.toggle_case_sensitivity();
+                    state.update_matches(&app.viewer_state.content);
+                }
+            }
+            KeyCode::Backspace => {
+                if let Some(ref mut state) = app.find_in_note_state {
+                    state.query.pop();
+                    let cursor_line = app.viewer_state.read_cursor.line;
+                    state.update_matches(&app.viewer_state.content);
+                    state.jump_to_nearest(cursor_line);
+                    if let Some(m) = state.current() {
+                        app.viewer_scroll = m.line.saturating_sub(5) as u16;
+                    }
+                }
+            }
+            KeyCode::Char(c) => {
+                if let Some(ref mut state) = app.find_in_note_state {
+                    state.query.push(c);
+                    let cursor_line = app.viewer_state.read_cursor.line;
+                    state.update_matches(&app.viewer_state.content);
+                    state.jump_to_nearest(cursor_line);
+                    if let Some(m) = state.current() {
+                        app.viewer_scroll = m.line.saturating_sub(5) as u16;
                     }
                 }
             }
