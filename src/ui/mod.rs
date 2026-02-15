@@ -16,4 +16,4 @@ pub use graph_view::GraphViewState;
 pub use layout::{Focus, render};
 pub use search::SearchState;
 pub use tag_filter::TagFilterState;
-pub use viewer_state::{EditorMode, ViewerState, VisibleLink};
+pub use viewer_state::{EditorMode, ViewerState};

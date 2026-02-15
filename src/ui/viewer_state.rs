@@ -94,7 +94,7 @@ impl ViewerState {
 
         // Build list of visible links with their line Position
         let mut line_index = 0;
-        for line in note.content.lines() {
+        for _line in note.content.lines() {
             for link in &note.links {
                 let line_start = note.content[..note.content.len().min(link.span.start)]
                     .lines()

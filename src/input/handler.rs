@@ -2,7 +2,6 @@ use std::io::Stdout;
 use std::path::PathBuf;
 
 use color_eyre::Result;
-use color_eyre::owo_colors::OwoColorize;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{Terminal, backend::CrosstermBackend};
 
