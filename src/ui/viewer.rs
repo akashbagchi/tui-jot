@@ -78,21 +78,41 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App) {
         }
     }
 
-    // Set cursor position in EDIT mode
+    // Set cursor position in EDIT mode, accounting for soft wrapping
     if is_focused && app.viewer_state.mode == EditorMode::Edit {
-        let cursor_line = app
-            .viewer_state
-            .cursor
-            .line
-            .saturating_sub(app.viewer_scroll as usize);
-        let cursor_col = app.viewer_state.cursor.col;
+        let inner_width = area.width.saturating_sub(2) as usize; // minus borders
+        if inner_width > 0 {
+            let scroll = app.viewer_scroll as usize;
 
-        // Account for border (1 char) and ensure cursor is within visible area
-        let x = area.x + 1 + cursor_col as u16;
-        let y = area.y + 1 + cursor_line as u16;
+            // Count visual lines consumed by all logical lines before the cursor line
+            let mut visual_y: usize = 0;
+            for line_idx in 0..app.viewer_state.cursor.line {
+                let line = app.viewer_state.content.line(line_idx);
+                let line_len = {
+                    let len = line.len_chars();
+                    if len > 0 && line.char(len - 1) == '\n' {
+                        len - 1
+                    } else {
+                        len
+                    }
+                };
+                visual_y += visual_lines_for_width(line_len, inner_width);
+            }
 
-        if y >= area.y + 1 && y < area.y + area.height - 1 {
-            frame.set_cursor_position((x, y));
+            // Add the wrap row within the cursor's own line
+            let cursor_col = app.viewer_state.cursor.col;
+            visual_y += cursor_col / inner_width;
+            let visual_x = cursor_col % inner_width;
+
+            // Subtract visual scroll offset
+            let visible_y = visual_y.saturating_sub(scroll);
+
+            let x = area.x + 1 + visual_x as u16;
+            let y = area.y + 1 + visible_y as u16;
+
+            if y >= area.y + 1 && y < area.y + area.height - 1 {
+                frame.set_cursor_position((x, y));
+            }
         }
     }
 }
@@ -494,4 +514,13 @@ fn render_inline(
     }
 
     Line::from(spans)
+}
+
+/// How many visual rows a line of `char_len` characters occupies in a column of `width`.
+fn visual_lines_for_width(char_len: usize, width: usize) -> usize {
+    if char_len == 0 || width == 0 {
+        1
+    } else {
+        (char_len + width - 1) / width
+    }
 }
