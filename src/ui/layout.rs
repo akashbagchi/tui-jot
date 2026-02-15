@@ -28,11 +28,9 @@ impl Focus {
     }
 }
 
-pub fn render(frame: &mut Frame, app: &App) {
-    let t = &app.theme;
-
+pub fn render(frame: &mut Frame, app: &mut App) {
     // Fill entire screen with theme background
-    let bg = Block::default().style(Style::default().bg(t.bg0).fg(t.fg1));
+    let bg = Block::default().style(Style::default().bg(app.theme.bg0).fg(app.theme.fg1));
     frame.render_widget(bg, frame.area());
 
     let chunks = Layout::default()
@@ -59,6 +57,8 @@ pub fn render(frame: &mut Frame, app: &App) {
     if let Some(state) = &app.delete_confirm_state {
         render_delete_dialog(frame, state, app);
     }
+
+    let t = &app.theme;
 
     if let Some(state) = &app.tag_filter_state {
         tag_filter::render(frame, frame.area(), state, t);
@@ -100,7 +100,7 @@ fn render_title_bar(frame: &mut Frame, area: Rect, app: &App) {
     frame.render_widget(title_bar, area);
 }
 
-fn render_main(frame: &mut Frame, area: Rect, app: &App) {
+fn render_main(frame: &mut Frame, area: Rect, app: &mut App) {
     let main_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([

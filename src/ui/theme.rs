@@ -55,6 +55,7 @@ pub struct Theme {
     pub finder_prompt: Color,
     pub autocomplete_bg: Color,
     pub autocomplete_sel_bg: Color,
+    pub cursor_line_bg: Color,
 }
 
 impl Theme {
@@ -141,6 +142,7 @@ impl Theme {
                     "finder_prompt" => self.finder_prompt = color,
                     "autocomplete_bg" => self.autocomplete_bg = color,
                     "autocomplete_sel_bg" => self.autocomplete_sel_bg = color,
+                    "cursor_line_bg" => self.cursor_line_bg = color,
                     _ => {}
                 }
             }
@@ -242,6 +244,7 @@ pub fn gruvbox_dark() -> Theme {
         finder_prompt: purple,
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg2,
+        cursor_line_bg: bg1,
     }
 }
 
@@ -309,6 +312,7 @@ pub fn gruvbox_light() -> Theme {
         finder_prompt: purple,
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg3,
+        cursor_line_bg: bg2,
     }
 }
 
@@ -376,6 +380,7 @@ pub fn catppuccin_mocha() -> Theme {
         finder_prompt: purple,
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg2,
+        cursor_line_bg: bg1,
     }
 }
 
@@ -443,6 +448,7 @@ pub fn catppuccin_latte() -> Theme {
         finder_prompt: purple,
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg3,
+        cursor_line_bg: bg2,
     }
 }
 
@@ -510,6 +516,7 @@ pub fn tokyo_night() -> Theme {
         finder_prompt: purple,
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg2,
+        cursor_line_bg: bg1,
     }
 }
 
@@ -577,6 +584,7 @@ pub fn tokyo_night_day() -> Theme {
         finder_prompt: purple,
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg3,
+        cursor_line_bg: bg2,
     }
 }
 
@@ -644,6 +652,7 @@ pub fn nord() -> Theme {
         finder_prompt: purple,
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg2,
+        cursor_line_bg: bg1,
     }
 }
 
@@ -711,5 +720,6 @@ pub fn dracula() -> Theme {
         finder_prompt: purple,
         autocomplete_bg: bg1,
         autocomplete_sel_bg: bg2,
+        cursor_line_bg: bg1,
     }
 }

@@ -12,7 +12,10 @@ use crate::core::Note;
 use crate::ui::layout::Focus;
 use crate::ui::theme::{self, Theme};
 
-pub fn render(frame: &mut Frame, area: Rect, app: &App) {
+pub fn render(frame: &mut Frame, area: Rect, app: &mut App) {
+    // Store viewer area height for scroll-follow in input handler
+    // Inner height = area height minus 2 for borders
+    app.viewer_area_height = area.height.saturating_sub(2);
     let t = &app.theme;
     let is_focused = app.focus == Focus::Viewer;
 
@@ -35,7 +38,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
 
     let content = if let Some(note) = app.selected_note() {
         match app.viewer_state.mode {
-            EditorMode::Read => render_markdown(note, &app.viewer_state, &app.vault, t),
+            EditorMode::Read => {
+                let read_cursor_line = app.viewer_state.read_cursor.line;
+                render_markdown(note, &app.viewer_state, &app.vault, t, read_cursor_line)
+            }
             EditorMode::Edit => render_edit_mode(&app.viewer_state),
         }
     } else {
@@ -170,11 +176,17 @@ fn render_markdown(
     viewer_state: &ViewerState,
     vault: &crate::core::Vault,
     t: &Theme,
+    read_cursor_line: usize,
 ) -> Text<'static> {
     let mut lines: Vec<Line<'static>> = Vec::new();
 
     for (line_idx, line) in note.content.lines().enumerate() {
-        lines.push(render_line(line, note, viewer_state, line_idx, vault, t));
+        let mut rendered = render_line(line, note, viewer_state, line_idx, vault, t);
+        if line_idx == read_cursor_line {
+            // Apply cursor line background to all spans
+            rendered = rendered.style(Style::default().bg(t.cursor_line_bg));
+        }
+        lines.push(rendered);
     }
 
     Text::from(lines)

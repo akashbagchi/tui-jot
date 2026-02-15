@@ -2,6 +2,7 @@ use std::io::Stdout;
 use std::path::PathBuf;
 
 use color_eyre::Result;
+use color_eyre::owo_colors::OwoColorize;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{Terminal, backend::CrosstermBackend};
 
@@ -325,19 +326,39 @@ impl InputHandler {
         }
     }
 
+    fn ensure_read_cursor_visible(app: &mut App) {
+        let cursor_line = app.viewer_state.read_cursor.line as u16;
+        let height = app.viewer_area_height;
+        if height == 0 {
+            return;
+        }
+        if cursor_line < app.viewer_scroll {
+            app.viewer_scroll = cursor_line;
+        } else if cursor_line >= app.viewer_scroll + height {
+            app.viewer_scroll = cursor_line - height + 1;
+        }
+    }
+
     fn handle_viewer_read(app: &mut App, key: KeyEvent) {
         match key.code {
             KeyCode::Char('i') => {
-                // Enter edit mode
                 if app.selected_note().is_some() {
                     app.viewer_state.enter_edit_mode();
                 }
             }
-            KeyCode::Char('j') | KeyCode::Down => {
+            KeyCode::Char('j') => {
                 app.viewer_scroll = app.viewer_scroll.saturating_add(1);
             }
-            KeyCode::Char('k') | KeyCode::Up => {
+            KeyCode::Char('k') => {
                 app.viewer_scroll = app.viewer_scroll.saturating_sub(1);
+            }
+            KeyCode::Down => {
+                app.viewer_state.move_read_cursor_down();
+                Self::ensure_read_cursor_visible(app);
+            }
+            KeyCode::Up => {
+                app.viewer_state.move_read_cursor_up();
+                Self::ensure_read_cursor_visible(app);
             }
             KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 app.viewer_scroll = app.viewer_scroll.saturating_add(10);
@@ -351,13 +372,31 @@ impl InputHandler {
             KeyCode::Char('p') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 app.viewer_state.prev_link();
             }
+            KeyCode::Left => {
+                app.viewer_state.move_read_cursor_left();
+            }
+            KeyCode::Right => {
+                app.viewer_state.move_read_cursor_right();
+            }
+            KeyCode::Char('h') if !key.modifiers.contains(KeyModifiers::CONTROL) => {
+                app.focus = Focus::Browser;
+            }
+            KeyCode::Char('l') if !key.modifiers.contains(KeyModifiers::CONTROL) => {
+                app.viewer_state.move_read_cursor_right();
+            }
+            KeyCode::Char('w') => {
+                app.viewer_state.move_read_word_right();
+            }
+            KeyCode::Char('b') if !key.modifiers.contains(KeyModifiers::CONTROL) => {
+                app.viewer_state.move_read_word_left();
+            }
             KeyCode::Enter => {
                 // Follow the current link
                 if let Some(target) = app.viewer_state.current_link().map(|l| l.target.clone()) {
                     Self::follow_link(app, &target);
                 }
             }
-            KeyCode::Char('h') | KeyCode::Left | KeyCode::Esc => {
+            KeyCode::Esc => {
                 // Go back to browser
                 app.focus = Focus::Browser;
             }
@@ -395,6 +434,17 @@ impl InputHandler {
         }
 
         match key.code {
+            // Undo/Redo
+            KeyCode::Char('z') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                if key.modifiers.contains(KeyModifiers::SHIFT) {
+                    app.viewer_state.redo();
+                } else {
+                    app.viewer_state.undo();
+                }
+            }
+            KeyCode::Char('y') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                app.viewer_state.redo();
+            }
             KeyCode::Esc => {
                 // Exit edit mode and save
                 let content = app.viewer_state.exit_edit_mode();
@@ -427,7 +477,7 @@ impl InputHandler {
             KeyCode::Left => {
                 if key.modifiers.contains(KeyModifiers::CONTROL) {
                     // Word movement - simplified: just move to start of line
-                    app.viewer_state.move_to_line_start();
+                    app.viewer_state.move_word_left();
                 } else {
                     app.viewer_state.move_cursor_left();
                 }
@@ -435,7 +485,7 @@ impl InputHandler {
             KeyCode::Right => {
                 if key.modifiers.contains(KeyModifiers::CONTROL) {
                     // Word movement - simplified: just move to end of line
-                    app.viewer_state.move_to_line_end();
+                    app.viewer_state.move_word_right();
                 } else {
                     app.viewer_state.move_cursor_right();
                 }

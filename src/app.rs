@@ -49,6 +49,7 @@ pub struct App {
     pub search_state: Option<ui::SearchState>,
     pub finder_state: Option<ui::FinderState>,
     pub graph_view_state: Option<ui::GraphViewState>,
+    pub viewer_area_height: u16,
 }
 
 impl App {
@@ -77,6 +78,7 @@ impl App {
             search_state: None,
             finder_state: None,
             graph_view_state: None,
+            viewer_area_height: 0,
         })
     }
 

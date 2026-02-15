@@ -23,6 +23,12 @@ pub struct AutocompleteState {
     pub selected: usize,
 }
 
+#[derive(Debug, Clone)]
+struct EditorSnapshot {
+    content: Rope,
+    cursor: Position,
+}
+
 pub struct ViewerState {
     // Link navigation (READ mode)
     pub selected_link: usize,
@@ -32,10 +38,16 @@ pub struct ViewerState {
     pub mode: EditorMode,
     pub content: Rope,
     pub cursor: Position,
+    pub read_cursor: Position,
     pub scroll_offset: usize,
     pub dirty: bool,
     pub current_note_path: Option<PathBuf>,
     pub autocomplete: Option<AutocompleteState>,
+
+    // Undo/Redo stacks
+    undo_stack: Vec<EditorSnapshot>,
+    redo_stack: Vec<EditorSnapshot>,
+    max_undo_history: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -53,10 +65,14 @@ impl ViewerState {
             mode: EditorMode::Read,
             content: Rope::new(),
             cursor: Position { line: 0, col: 0 },
+            read_cursor: Position { line: 0, col: 0 },
             scroll_offset: 0,
             dirty: false,
             current_note_path: None,
             autocomplete: None,
+            undo_stack: Vec::new(),
+            redo_stack: Vec::new(),
+            max_undo_history: 100,
         }
     }
 
@@ -67,6 +83,14 @@ impl ViewerState {
 
         // Update content rope
         self.content = Rope::from_str(&note.content);
+
+        // Reset cursors when loading new note
+        self.cursor = Position { line: 0, col: 0 };
+        self.read_cursor = Position { line: 0, col: 0 };
+
+        // Clear undo/redo history when loading a new note
+        self.undo_stack.clear();
+        self.redo_stack.clear();
 
         // Build list of visible links with their line Position
         let mut line_index = 0;
@@ -112,14 +136,70 @@ impl ViewerState {
     // EDIT mode operations
     pub fn enter_edit_mode(&mut self) {
         self.mode = EditorMode::Edit;
-        self.cursor = Position { line: 0, col: 0 };
+        self.cursor = self.read_cursor.clone();
+        self.save_undo_snapshot();
     }
 
     pub fn exit_edit_mode(&mut self) -> String {
         self.mode = EditorMode::Read;
         self.dirty = false;
         self.autocomplete = None;
+        self.undo_stack.clear();
+        self.redo_stack.clear();
         self.content.to_string()
+    }
+
+    fn save_undo_snapshot(&mut self) {
+        let snapshot = EditorSnapshot {
+            content: self.content.clone(),
+            cursor: self.cursor.clone(),
+        };
+
+        self.undo_stack.push(snapshot);
+
+        if self.undo_stack.len() > self.max_undo_history {
+            self.undo_stack.remove(0);
+        }
+
+        self.redo_stack.clear();
+    }
+
+    pub fn undo(&mut self) -> bool {
+        if let Some(snapshot) = self.undo_stack.pop() {
+            // Save current state to redo stack
+            let current = EditorSnapshot {
+                content: self.content.clone(),
+                cursor: self.cursor.clone(),
+            };
+            self.redo_stack.push(current);
+
+            // Restore snapshot
+            self.content = snapshot.content;
+            self.cursor = snapshot.cursor;
+            self.dirty = true;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn redo(&mut self) -> bool {
+        if let Some(snapshot) = self.redo_stack.pop() {
+            // Save current state to undo stack
+            let current = EditorSnapshot {
+                content: self.content.clone(),
+                cursor: self.cursor.clone(),
+            };
+            self.undo_stack.push(current);
+
+            // Restore snapshot
+            self.content = snapshot.content;
+            self.cursor = snapshot.cursor;
+            self.dirty = true;
+            true
+        } else {
+            false
+        }
     }
 
     pub fn insert_char(&mut self, c: char) {
@@ -133,6 +213,8 @@ impl ViewerState {
     }
 
     pub fn insert_newline(&mut self) {
+        self.save_undo_snapshot();
+
         let char_idx = self.line_col_to_char_idx(self.cursor.line, self.cursor.col);
         self.content.insert_char(char_idx, '\n');
         self.cursor.line += 1;
@@ -143,6 +225,8 @@ impl ViewerState {
 
     pub fn delete_char(&mut self) {
         if self.cursor.col > 0 {
+            self.save_undo_snapshot();
+
             let char_idx = self.line_col_to_char_idx(self.cursor.line, self.cursor.col);
             if char_idx > 0 {
                 self.content.remove(char_idx - 1..char_idx);
@@ -151,6 +235,8 @@ impl ViewerState {
                 self.check_autocomplete_trigger();
             }
         } else if self.cursor.line > 0 {
+            self.save_undo_snapshot();
+
             // Join with previous line
             let char_idx = self.line_col_to_char_idx(self.cursor.line, self.cursor.col);
             if char_idx > 0 {
@@ -171,6 +257,8 @@ impl ViewerState {
     pub fn delete_forward(&mut self) {
         let char_idx = self.line_col_to_char_idx(self.cursor.line, self.cursor.col);
         if char_idx < self.content.len_chars() {
+            self.save_undo_snapshot();
+
             self.content.remove(char_idx..char_idx + 1);
             self.dirty = true;
             self.check_autocomplete_trigger();
@@ -216,6 +304,173 @@ impl ViewerState {
 
     pub fn move_to_line_end(&mut self) {
         self.cursor.col = self.current_line_len();
+    }
+
+    // Word-based navigation for EDIT mode
+    pub fn move_word_left(&mut self) {
+        let char_idx = self.line_col_to_char_idx(self.cursor.line, self.cursor.col);
+        if char_idx == 0 {
+            return;
+        }
+
+        let mut new_idx = char_idx.saturating_sub(1);
+
+        // Skip whitespace
+        while new_idx > 0 && self.content.char(new_idx).is_whitespace() {
+            new_idx -= 1;
+        }
+
+        // Skip word characters
+        while new_idx > 0 {
+            let ch = self.content.char(new_idx.saturating_sub(1));
+            if ch.is_whitespace() || is_word_separator(ch) {
+                break;
+            }
+            new_idx -= 1;
+        }
+
+        let new_line = self.content.char_to_line(new_idx);
+        let line_start = self.content.line_to_char(new_line);
+        let new_col = new_idx - line_start;
+
+        self.cursor.line = new_line;
+        self.cursor.col = new_col;
+    }
+
+    pub fn move_word_right(&mut self) {
+        let char_idx = self.line_col_to_char_idx(self.cursor.line, self.cursor.col);
+        let len = self.content.len_chars();
+        if char_idx >= len {
+            return;
+        }
+
+        let mut new_idx = char_idx;
+
+        // Skip current word
+        while new_idx < len {
+            let ch = self.content.char(new_idx);
+            if ch.is_whitespace() || is_word_separator(ch) {
+                break;
+            }
+            new_idx += 1;
+        }
+
+        // Skip whitespace
+        while new_idx < len && self.content.char(new_idx).is_whitespace() {
+            new_idx += 1;
+        }
+
+        // Convert back to line/col
+        let new_line = self.content.char_to_line(new_idx);
+        let line_start = self.content.line_to_char(new_line);
+        let new_col = new_idx - line_start;
+
+        self.cursor.line = new_line;
+        self.cursor.col = new_col;
+    }
+
+    pub fn move_read_cursor_left(&mut self) {
+        if self.read_cursor.col > 0 {
+            self.read_cursor.col -= 1;
+        } else if self.read_cursor.line > 0 {
+            self.read_cursor.line -= 1;
+            self.read_cursor.col = self.read_line_len();
+        }
+    }
+
+    pub fn move_read_cursor_right(&mut self) {
+        let line_len = self.read_line_len();
+        if self.read_cursor.col < line_len {
+            self.read_cursor.col += 1;
+        } else if self.read_cursor.line < self.content.len_lines().saturating_sub(1) {
+            self.read_cursor.line += 1;
+            self.read_cursor.col = 0;
+        }
+    }
+
+    pub fn move_read_cursor_up(&mut self) {
+        if self.read_cursor.line > 0 {
+            self.read_cursor.line -= 1;
+            self.read_cursor.col = self.read_cursor.col.min(self.read_line_len());
+        }
+    }
+
+    pub fn move_read_cursor_down(&mut self) {
+        if self.read_cursor.line < self.content.len_lines().saturating_sub(1) {
+            self.read_cursor.line += 1;
+            self.read_cursor.col = self.read_cursor.col.min(self.read_line_len());
+        }
+    }
+
+    pub fn move_read_word_left(&mut self) {
+        let char_idx = self.line_col_to_char_idx(self.read_cursor.line, self.read_cursor.col);
+        if char_idx == 0 {
+            return;
+        }
+
+        let mut new_idx = char_idx.saturating_sub(1);
+
+        // Skip whitespace
+        while new_idx > 0 && self.content.char(new_idx).is_whitespace() {
+            new_idx -= 1;
+        }
+
+        // Skip word characters
+        while new_idx > 0 {
+            let ch = self.content.char(new_idx.saturating_sub(1));
+            if ch.is_whitespace() || is_word_separator(ch) {
+                break;
+            }
+            new_idx -= 1;
+        }
+
+        // Convert back to line/col
+        let new_line = self.content.char_to_line(new_idx);
+        let line_start = self.content.line_to_char(new_line);
+        let new_col = new_idx - line_start;
+
+        self.read_cursor.line = new_line;
+        self.read_cursor.col = new_col;
+    }
+
+    pub fn move_read_word_right(&mut self) {
+        let char_idx = self.line_col_to_char_idx(self.read_cursor.line, self.read_cursor.col);
+        let len = self.content.len_chars();
+        if char_idx >= len {
+            return;
+        }
+
+        let mut new_idx = char_idx;
+
+        // Skip current word
+        while new_idx < len {
+            let ch = self.content.char(new_idx);
+            if ch.is_whitespace() || is_word_separator(ch) {
+                break;
+            }
+            new_idx += 1;
+        }
+
+        // Skip whitespace
+        while new_idx < len && self.content.char(new_idx).is_whitespace() {
+            new_idx += 1;
+        }
+
+        // Convert back to line/col
+        let new_line = self.content.char_to_line(new_idx);
+        let line_start = self.content.line_to_char(new_line);
+        let new_col = new_idx - line_start;
+
+        self.read_cursor.line = new_line;
+        self.read_cursor.col = new_col;
+    }
+
+    fn read_line_len(&self) -> usize {
+        if self.read_cursor.line < self.content.len_lines() {
+            Self::line_content_len(self.content.line(self.read_cursor.line))
+        } else {
+            0
+        }
     }
 
     fn line_content_len(line: ropey::RopeSlice) -> usize {
@@ -367,4 +622,28 @@ impl ViewerState {
             }
         }
     }
+}
+
+fn is_word_separator(ch: char) -> bool {
+    matches!(
+        ch,
+        '.' | ','
+            | ';'
+            | ':'
+            | '!'
+            | '?'
+            | '('
+            | ')'
+            | '['
+            | ']'
+            | '{'
+            | '}'
+            | '"'
+            | '\''
+            | '`'
+            | '/'
+            | '\\'
+            | '-'
+            | '_'
+    )
 }
