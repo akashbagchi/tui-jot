@@ -640,9 +640,7 @@ impl ViewerState {
                 };
                 let text = self.content.slice(start_idx..end_idx).to_string();
                 self.content.remove(start_idx..end_idx);
-                self.read_cursor.line = start_line.min(
-                    self.content.len_lines().saturating_sub(1),
-                );
+                self.read_cursor.line = start_line.min(self.content.len_lines().saturating_sub(1));
                 self.read_cursor.col = 0;
                 self.dirty = true;
                 Some(text)

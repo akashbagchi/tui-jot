@@ -454,8 +454,7 @@ impl InputHandler {
             }
             KeyCode::Char('p') if !key.modifiers.contains(KeyModifiers::CONTROL) => {
                 // Paste from clipboard at read cursor
-                let text = paste_from_clipboard()
-                    .or_else(|| app.viewer_state.clipboard.clone());
+                let text = paste_from_clipboard().or_else(|| app.viewer_state.clipboard.clone());
                 if let Some(text) = text {
                     app.viewer_state.paste_text_at_read_cursor(&text);
                     Self::save_and_reload(app);
@@ -587,8 +586,7 @@ impl InputHandler {
                 if app.viewer_state.selection.is_some() {
                     app.viewer_state.delete_selected_text();
                 }
-                let text = paste_from_clipboard()
-                    .or_else(|| app.viewer_state.clipboard.clone());
+                let text = paste_from_clipboard().or_else(|| app.viewer_state.clipboard.clone());
                 if let Some(text) = text {
                     app.viewer_state.paste_text(&text);
                 }
@@ -950,9 +948,7 @@ impl InputHandler {
                             let center = state
                                 .selected_node
                                 .clone()
-                                .or_else(|| {
-                                    app.vault.notes.keys().next().cloned()
-                                });
+                                .or_else(|| app.vault.notes.keys().next().cloned());
                             if let Some(ref path) = center {
                                 state.update_local(&app.vault, path, size.width, size.height);
                             }
@@ -1013,8 +1009,7 @@ impl InputHandler {
                 app.find_in_note_state = None;
             }
             KeyCode::Enter | KeyCode::Char('n')
-                if key.code == KeyCode::Enter
-                    || key.modifiers.contains(KeyModifiers::CONTROL) =>
+                if key.code == KeyCode::Enter || key.modifiers.contains(KeyModifiers::CONTROL) =>
             {
                 if let Some(ref mut state) = app.find_in_note_state {
                     state.next_match();

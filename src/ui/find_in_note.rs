@@ -137,11 +137,7 @@ pub fn render_find_bar(frame: &mut Frame, area: Rect, state: &FindInNoteState, t
         height: 1,
     };
 
-    let case_indicator = if state.case_sensitive {
-        "[Aa]"
-    } else {
-        "[aa]"
-    };
+    let case_indicator = if state.case_sensitive { "[Aa]" } else { "[aa]" };
 
     let match_info = if state.matches.is_empty() {
         if state.query.is_empty() {
@@ -154,7 +150,12 @@ pub fn render_find_bar(frame: &mut Frame, area: Rect, state: &FindInNoteState, t
     };
 
     let line = Line::from(vec![
-        Span::styled(" Find: ", Style::default().fg(t.search_prompt).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            " Find: ",
+            Style::default()
+                .fg(t.search_prompt)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(&state.query, Style::default().fg(t.fg0)),
         Span::styled(
             "_",
@@ -164,7 +165,10 @@ pub fn render_find_bar(frame: &mut Frame, area: Rect, state: &FindInNoteState, t
         ),
         Span::styled(&match_info, Style::default().fg(t.fg3)),
         Span::styled(format!("  {}", case_indicator), Style::default().fg(t.fg4)),
-        Span::styled("  Alt+c: toggle case  Esc: close", Style::default().fg(t.fg4)),
+        Span::styled(
+            "  Alt+c: toggle case  Esc: close",
+            Style::default().fg(t.fg4),
+        ),
     ]);
 
     let bar = Paragraph::new(line).style(Style::default().bg(t.status_bar_bg));
