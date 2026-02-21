@@ -87,6 +87,12 @@ impl Theme {
             "tokyo-night-day" => Some(tokyo_night_day()),
             "nord" => Some(nord()),
             "dracula" => Some(dracula()),
+            "tidal-dark" => Some(tidal_dark()),
+            "tidal-light" => Some(tidal_light()),
+            "ember-dark" => Some(ember_dark()),
+            "ember-light" => Some(ember_light()),
+            "sunset-dark" => Some(sunset_dark()),
+            "sunset-light" => Some(sunset_light()),
             _ => None,
         }
     }
@@ -751,5 +757,443 @@ pub fn dracula() -> Theme {
         selection_bg: bg2,
         find_match_bg: bg3,
         find_current_bg: yellow,
+    }
+}
+
+// ── Tidal (teal / rose) ────────────────────────────────────────
+
+pub fn tidal_dark() -> Theme {
+    // Palette: #6ab4b4, #8b595c, #003e3f, #97d1d1, #a7787a, #634345
+    let bg0 = Color::Rgb(14, 37, 38);
+    let bg1 = Color::Rgb(26, 52, 53);
+    let bg2 = Color::Rgb(38, 67, 68);
+    let bg3 = Color::Rgb(56, 84, 84);
+    let bg4 = Color::Rgb(74, 101, 101);
+    let fg0 = Color::Rgb(230, 240, 240);
+    let fg1 = Color::Rgb(204, 222, 222);
+    let fg2 = Color::Rgb(176, 200, 200);
+    let fg3 = Color::Rgb(140, 170, 170);
+    let fg4 = Color::Rgb(110, 140, 140);
+    let red = Color::Rgb(139, 89, 92); // #8b595c
+    let green = Color::Rgb(106, 180, 180); // #6ab4b4
+    let yellow = Color::Rgb(167, 120, 122); // #a7787a
+    let blue = Color::Rgb(151, 209, 209); // #97d1d1
+    let purple = Color::Rgb(139, 89, 92); // #8b595c
+    let aqua = Color::Rgb(106, 180, 180); // #6ab4b4
+    let orange = Color::Rgb(167, 120, 122); // #a7787a
+
+    Theme {
+        bg0,
+        bg1,
+        bg2,
+        bg3,
+        bg4,
+        fg0,
+        fg1,
+        fg2,
+        fg3,
+        fg4,
+        red,
+        green,
+        yellow,
+        blue,
+        purple,
+        aqua,
+        orange,
+        border_focused: aqua,
+        border_unfocused: bg3,
+        border_overlay: orange,
+        selected_fg: fg0,
+        selected_bg: bg2,
+        heading_1: blue,
+        heading_2: aqua,
+        heading_3: orange,
+        link_fg: aqua,
+        link_selected_fg: blue,
+        link_selected_bg: bg2,
+        link_broken: red,
+        tag_fg: orange,
+        inline_code: red,
+        title_fg: blue,
+        title_bar_bg: bg1,
+        status_bar_bg: bg1,
+        cursor_blink: blue,
+        empty_hint: fg4,
+        dir_fg: orange,
+        file_fg: fg1,
+        backlink_fg: red,
+        tag_filter_border: aqua,
+        search_prompt: aqua,
+        finder_prompt: orange,
+        autocomplete_bg: bg1,
+        autocomplete_sel_bg: bg2,
+        cursor_line_bg: bg1,
+        selection_bg: bg2,
+        find_match_bg: bg3,
+        find_current_bg: aqua,
+    }
+}
+
+pub fn tidal_light() -> Theme {
+    // Palette: #6ab4b4, #8b595c, #003e3f, #97d1d1, #a7787a, #634345
+    let bg0 = Color::Rgb(230, 240, 240);
+    let bg1 = Color::Rgb(216, 232, 232);
+    let bg2 = Color::Rgb(204, 224, 224);
+    let bg3 = Color::Rgb(184, 208, 208);
+    let bg4 = Color::Rgb(160, 190, 190);
+    let fg0 = Color::Rgb(0, 62, 63); // #003e3f
+    let fg1 = Color::Rgb(14, 37, 38);
+    let fg2 = Color::Rgb(48, 72, 72);
+    let fg3 = Color::Rgb(72, 96, 96);
+    let fg4 = Color::Rgb(96, 120, 120);
+    let red = Color::Rgb(99, 67, 69); // #634345
+    let green = Color::Rgb(0, 62, 63); // #003e3f
+    let yellow = Color::Rgb(139, 89, 92); // #8b595c
+    let blue = Color::Rgb(0, 62, 63); // #003e3f
+    let purple = Color::Rgb(99, 67, 69); // #634345
+    let aqua = Color::Rgb(0, 82, 83); // darkened teal
+    let orange = Color::Rgb(139, 89, 92); // #8b595c
+
+    Theme {
+        bg0,
+        bg1,
+        bg2,
+        bg3,
+        bg4,
+        fg0,
+        fg1,
+        fg2,
+        fg3,
+        fg4,
+        red,
+        green,
+        yellow,
+        blue,
+        purple,
+        aqua,
+        orange,
+        border_focused: blue,
+        border_unfocused: bg4,
+        border_overlay: orange,
+        selected_fg: bg0,
+        selected_bg: blue,
+        heading_1: orange,
+        heading_2: blue,
+        heading_3: purple,
+        link_fg: blue,
+        link_selected_fg: bg0,
+        link_selected_bg: blue,
+        link_broken: red,
+        tag_fg: orange,
+        inline_code: purple,
+        title_fg: blue,
+        title_bar_bg: bg2,
+        status_bar_bg: bg2,
+        cursor_blink: orange,
+        empty_hint: fg4,
+        dir_fg: orange,
+        file_fg: fg1,
+        backlink_fg: purple,
+        tag_filter_border: blue,
+        search_prompt: green,
+        finder_prompt: orange,
+        autocomplete_bg: bg1,
+        autocomplete_sel_bg: bg3,
+        cursor_line_bg: bg2,
+        selection_bg: bg3,
+        find_match_bg: bg4,
+        find_current_bg: yellow,
+    }
+}
+
+// ── Ember (amber / steel) ──────────────────────────────────────
+
+pub fn ember_dark() -> Theme {
+    // Palette: #794b1f, #396b8d, #3d1700, #b18866, #7fa6c3, #1a3243
+    let bg0 = Color::Rgb(28, 20, 8);
+    let bg1 = Color::Rgb(44, 36, 24);
+    let bg2 = Color::Rgb(60, 52, 40);
+    let bg3 = Color::Rgb(80, 72, 60);
+    let bg4 = Color::Rgb(100, 92, 80);
+    let fg0 = Color::Rgb(240, 228, 216);
+    let fg1 = Color::Rgb(220, 208, 194);
+    let fg2 = Color::Rgb(196, 184, 168);
+    let fg3 = Color::Rgb(164, 152, 136);
+    let fg4 = Color::Rgb(136, 124, 108);
+    let red = Color::Rgb(121, 75, 31); // #794b1f
+    let green = Color::Rgb(127, 166, 195); // #7fa6c3
+    let yellow = Color::Rgb(177, 136, 102); // #b18866
+    let blue = Color::Rgb(57, 107, 141); // #396b8d
+    let purple = Color::Rgb(26, 50, 67); // #1a3243
+    let aqua = Color::Rgb(127, 166, 195); // #7fa6c3
+    let orange = Color::Rgb(177, 136, 102); // #b18866
+
+    Theme {
+        bg0,
+        bg1,
+        bg2,
+        bg3,
+        bg4,
+        fg0,
+        fg1,
+        fg2,
+        fg3,
+        fg4,
+        red,
+        green,
+        yellow,
+        blue,
+        purple,
+        aqua,
+        orange,
+        border_focused: aqua,
+        border_unfocused: bg3,
+        border_overlay: orange,
+        selected_fg: fg0,
+        selected_bg: bg2,
+        heading_1: orange,
+        heading_2: aqua,
+        heading_3: Color::Rgb(212, 168, 120), // lighter warm
+        link_fg: aqua,
+        link_selected_fg: orange,
+        link_selected_bg: bg2,
+        link_broken: Color::Rgb(160, 70, 30), // reddish brown
+        tag_fg: orange,
+        inline_code: Color::Rgb(212, 168, 120), // lighter warm
+        title_fg: aqua,
+        title_bar_bg: bg1,
+        status_bar_bg: bg1,
+        cursor_blink: orange,
+        empty_hint: fg4,
+        dir_fg: orange,
+        file_fg: fg1,
+        backlink_fg: Color::Rgb(90, 130, 160), // mid steel
+        tag_filter_border: aqua,
+        search_prompt: aqua,
+        finder_prompt: orange,
+        autocomplete_bg: bg1,
+        autocomplete_sel_bg: bg2,
+        cursor_line_bg: bg1,
+        selection_bg: bg2,
+        find_match_bg: bg3,
+        find_current_bg: orange,
+    }
+}
+
+pub fn ember_light() -> Theme {
+    // Palette: #794b1f, #396b8d, #3d1700, #b18866, #7fa6c3, #1a3243
+    let bg0 = Color::Rgb(240, 228, 216);
+    let bg1 = Color::Rgb(228, 216, 204);
+    let bg2 = Color::Rgb(216, 204, 190);
+    let bg3 = Color::Rgb(200, 188, 174);
+    let bg4 = Color::Rgb(180, 168, 152);
+    let fg0 = Color::Rgb(28, 20, 8);
+    let fg1 = Color::Rgb(44, 36, 24);
+    let fg2 = Color::Rgb(60, 52, 40);
+    let fg3 = Color::Rgb(88, 80, 68);
+    let fg4 = Color::Rgb(116, 108, 96);
+    let red = Color::Rgb(61, 23, 0); // #3d1700
+    let green = Color::Rgb(57, 107, 141); // #396b8d
+    let yellow = Color::Rgb(121, 75, 31); // #794b1f
+    let blue = Color::Rgb(26, 50, 67); // #1a3243
+    let purple = Color::Rgb(61, 23, 0); // #3d1700
+    let aqua = Color::Rgb(57, 107, 141); // #396b8d
+    let orange = Color::Rgb(121, 75, 31); // #794b1f
+
+    Theme {
+        bg0,
+        bg1,
+        bg2,
+        bg3,
+        bg4,
+        fg0,
+        fg1,
+        fg2,
+        fg3,
+        fg4,
+        red,
+        green,
+        yellow,
+        blue,
+        purple,
+        aqua,
+        orange,
+        border_focused: blue,
+        border_unfocused: bg4,
+        border_overlay: orange,
+        selected_fg: bg0,
+        selected_bg: blue,
+        heading_1: orange,
+        heading_2: blue,
+        heading_3: aqua,
+        link_fg: blue,
+        link_selected_fg: bg0,
+        link_selected_bg: blue,
+        link_broken: red,
+        tag_fg: orange,
+        inline_code: purple,
+        title_fg: blue,
+        title_bar_bg: bg2,
+        status_bar_bg: bg2,
+        cursor_blink: orange,
+        empty_hint: fg4,
+        dir_fg: orange,
+        file_fg: fg1,
+        backlink_fg: aqua,
+        tag_filter_border: blue,
+        search_prompt: green,
+        finder_prompt: orange,
+        autocomplete_bg: bg1,
+        autocomplete_sel_bg: bg3,
+        cursor_line_bg: bg2,
+        selection_bg: bg3,
+        find_match_bg: bg4,
+        find_current_bg: yellow,
+    }
+}
+
+// ── Sunset (warm orange / sky blue) ────────────────────────────
+
+pub fn sunset_dark() -> Theme {
+    // Palette: #cd7c4c, #50afd8, #903d00, #ffc09a, #abedff, #416e83
+    let bg0 = Color::Rgb(26, 20, 16);
+    let bg1 = Color::Rgb(42, 36, 32);
+    let bg2 = Color::Rgb(60, 52, 48);
+    let bg3 = Color::Rgb(80, 72, 64);
+    let bg4 = Color::Rgb(100, 92, 84);
+    let fg0 = Color::Rgb(255, 240, 232);
+    let fg1 = Color::Rgb(232, 220, 212);
+    let fg2 = Color::Rgb(208, 196, 188);
+    let fg3 = Color::Rgb(176, 164, 152);
+    let fg4 = Color::Rgb(144, 132, 120);
+    let red = Color::Rgb(144, 61, 0); // #903d00
+    let green = Color::Rgb(80, 175, 216); // #50afd8
+    let yellow = Color::Rgb(255, 192, 154); // #ffc09a
+    let blue = Color::Rgb(80, 175, 216); // #50afd8
+    let purple = Color::Rgb(65, 110, 131); // #416e83
+    let aqua = Color::Rgb(171, 237, 255); // #abedff
+    let orange = Color::Rgb(205, 124, 76); // #cd7c4c
+
+    Theme {
+        bg0,
+        bg1,
+        bg2,
+        bg3,
+        bg4,
+        fg0,
+        fg1,
+        fg2,
+        fg3,
+        fg4,
+        red,
+        green,
+        yellow,
+        blue,
+        purple,
+        aqua,
+        orange,
+        border_focused: blue,
+        border_unfocused: bg3,
+        border_overlay: orange,
+        selected_fg: fg0,
+        selected_bg: bg2,
+        heading_1: orange,
+        heading_2: blue,
+        heading_3: yellow,
+        link_fg: blue,
+        link_selected_fg: aqua,
+        link_selected_bg: bg2,
+        link_broken: red,
+        tag_fg: yellow,
+        inline_code: orange,
+        title_fg: blue,
+        title_bar_bg: bg1,
+        status_bar_bg: bg1,
+        cursor_blink: orange,
+        empty_hint: fg4,
+        dir_fg: orange,
+        file_fg: fg1,
+        backlink_fg: purple,
+        tag_filter_border: blue,
+        search_prompt: blue,
+        finder_prompt: orange,
+        autocomplete_bg: bg1,
+        autocomplete_sel_bg: bg2,
+        cursor_line_bg: bg1,
+        selection_bg: bg2,
+        find_match_bg: bg3,
+        find_current_bg: yellow,
+    }
+}
+
+pub fn sunset_light() -> Theme {
+    // Palette: #cd7c4c, #50afd8, #903d00, #ffc09a, #abedff, #416e83
+    let bg0 = Color::Rgb(255, 244, 238);
+    let bg1 = Color::Rgb(240, 228, 220);
+    let bg2 = Color::Rgb(228, 216, 206);
+    let bg3 = Color::Rgb(212, 200, 190);
+    let bg4 = Color::Rgb(192, 180, 168);
+    let fg0 = Color::Rgb(26, 20, 16);
+    let fg1 = Color::Rgb(48, 40, 32);
+    let fg2 = Color::Rgb(72, 60, 48);
+    let fg3 = Color::Rgb(96, 84, 72);
+    let fg4 = Color::Rgb(128, 116, 104);
+    let red = Color::Rgb(144, 61, 0); // #903d00
+    let green = Color::Rgb(65, 110, 131); // #416e83
+    let yellow = Color::Rgb(144, 61, 0); // #903d00
+    let blue = Color::Rgb(65, 110, 131); // #416e83
+    let purple = Color::Rgb(144, 61, 0); // #903d00
+    let aqua = Color::Rgb(65, 110, 131); // #416e83
+    let orange = Color::Rgb(144, 61, 0); // #903d00
+
+    Theme {
+        bg0,
+        bg1,
+        bg2,
+        bg3,
+        bg4,
+        fg0,
+        fg1,
+        fg2,
+        fg3,
+        fg4,
+        red,
+        green,
+        yellow,
+        blue,
+        purple,
+        aqua,
+        orange,
+        border_focused: blue,
+        border_unfocused: bg4,
+        border_overlay: orange,
+        selected_fg: bg0,
+        selected_bg: blue,
+        heading_1: orange,
+        heading_2: blue,
+        heading_3: aqua,
+        link_fg: blue,
+        link_selected_fg: bg0,
+        link_selected_bg: blue,
+        link_broken: red,
+        tag_fg: orange,
+        inline_code: Color::Rgb(100, 50, 10), // muted burnt orange
+        title_fg: blue,
+        title_bar_bg: bg2,
+        status_bar_bg: bg2,
+        cursor_blink: orange,
+        empty_hint: fg4,
+        dir_fg: orange,
+        file_fg: fg1,
+        backlink_fg: aqua,
+        tag_filter_border: blue,
+        search_prompt: green,
+        finder_prompt: orange,
+        autocomplete_bg: bg1,
+        autocomplete_sel_bg: bg3,
+        cursor_line_bg: bg2,
+        selection_bg: bg3,
+        find_match_bg: bg4,
+        find_current_bg: Color::Rgb(255, 192, 154), // #ffc09a
     }
 }
